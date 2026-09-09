@@ -1,5 +1,8 @@
 @import 'tailwindcss';
 
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+@source "../js/**/*.vue";
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 

@@ -19,7 +19,7 @@ class CatalogController extends Controller
             ->whereNull('parent_id')
             ->with([
                 'lang',
-                'children' => fn (Builder $query) => $query
+                'children' => fn ($query) => $query
                     ->where('is_active', true)
                     ->orderBy('sort_order'),
                 'children.lang',

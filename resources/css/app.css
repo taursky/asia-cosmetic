@@ -1,28 +1,14 @@
-/*@import 'tailwindcss';
+@import "tailwindcss";
 
-@source "../views!**!*.blade.php";
-@source "../js!**!*.js";
-@source "../js!**!*.vue";
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views!*.blade.php';
-@source '../../storage/framework/views!*.php';
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+@source "../js/**/*.vue";
+
+@source "../../storage/framework/views/*.php";
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-}*/
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Ваши кастомные стили (если нужны) */
-@layer base {
-    /* Например, сброс стилей или глобальные настройки */
-}
-
-@layer components {
-    /* Кастомные компоненты */
-}
-
-@layer utilities {
-    /* Дополнительные утилиты */
+    --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    "Noto Color Emoji";
 }

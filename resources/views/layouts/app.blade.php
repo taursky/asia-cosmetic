@@ -24,7 +24,11 @@
 
 <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
 
+@include('block.header')
+
 @yield('content')
+
+@include('block.footer')
 
 @stack('scripts')
 

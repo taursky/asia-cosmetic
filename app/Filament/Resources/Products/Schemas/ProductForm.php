@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductPriceType;
 use App\Models\OptionValue;
+use App\Filament\Support\ImageUploadFields;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -283,17 +284,18 @@ class ProductForm
     private static function imageFields(): array
     {
         return [
-            FileUpload::make('name')
-                ->label('Файл')
-                ->image()
-                ->disk('public')
-                ->directory('catalog')
-                ->imageEditor()
-                ->required()
-                ->columnSpan(2),
-            Toggle::make('is_primary')->label('Основное'),
-            TextInput::make('position')->label('Позиция')->numeric()->default(1)->required(),
-            TextInput::make('mime_type')->label('MIME')->maxLength(255),
+//            FileUpload::make('name')
+//                ->label('Файл')
+//                ->image()
+//                ->disk('public')
+//                ->directory('catalog')
+//                ->imageEditor()
+//                ->required()
+//                ->columnSpan(2),
+//            Toggle::make('is_primary')->label('Основное'),
+//            TextInput::make('position')->label('Позиция')->numeric()->default(1)->required(),
+//            TextInput::make('mime_type')->label('MIME')->maxLength(255),
+            ImageUploadFields::schema('catalog/products')
         ];
     }
 

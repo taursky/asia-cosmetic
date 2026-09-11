@@ -2,9 +2,11 @@ import './bootstrap'
 import { createApp } from 'vue'
 
 import Counter from './components/Counter.vue'
+import HomeHero from './components/HomeHero.vue'
 
 const components = {
     Counter,
+    HomeHero,
 }
 
 document.querySelectorAll('[data-vue-component]').forEach((element) => {

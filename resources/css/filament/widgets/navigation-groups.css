@@ -1,0 +1,16 @@
+/* resources/css/filament/widgets/navigation-groups.css */
+.navigation-group-widget {
+    scrollbar-width: thin;
+}
+
+.navigation-group-widget::-webkit-scrollbar {
+    width: 4px;
+}
+
+.navigation-item {
+    transition: all 0.2s ease-in-out;
+}
+
+.navigation-item:hover {
+    transform: translateX(2px);
+}

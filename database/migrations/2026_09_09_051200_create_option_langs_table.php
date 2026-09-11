@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('option_lang', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('option_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('option_id')->constrained('options')->cascadeOnDelete();
             $table->string('lang', 10);
             $table->string('name')->nullable();
             $table->text('value')->nullable();

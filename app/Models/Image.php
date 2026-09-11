@@ -2,14 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Image extends Model
 {
     public $guarded = [];
 
-    protected function casts(): array { return ['is_primary' => 'boolean']; }
+    protected function casts(): array
+    {
+        return ['is_primary' => 'boolean'];
+    }
 
+    public function imageable(): MorphTo
+    {
+        return $this->morphTo();
+    }
 }

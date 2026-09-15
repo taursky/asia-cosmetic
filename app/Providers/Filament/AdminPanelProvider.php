@@ -28,8 +28,11 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->default()
             ->authGuard('admin')
             ->login(Login::class)
+            ->sidebarCollapsibleOnDesktop()
             ->brandName('Asia Cosmetic')
             ->favicon(asset('favicon.ico'))
             ->colors([

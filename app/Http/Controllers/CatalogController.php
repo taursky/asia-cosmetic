@@ -50,9 +50,10 @@ class CatalogController extends Controller
             ->with([
                 'lang',
                 'parent.lang',
-                'children' => fn (Builder $query) => $query
+                'children' => fn ($query) => $query
                     ->where('is_active', true)
-                    ->orderBy('sort_order'),
+                    ->orderBy('sort_order')
+                ,
                 'children.lang',
             ])
             ->firstOrFail();
@@ -60,9 +61,11 @@ class CatalogController extends Controller
         $categoryIds = $this->categoryTreeIds($category);
 
         $products = $this->productListingQuery($locale)
-            ->whereHas('categories', fn (Builder $query) => $query
-                ->whereIn('categories.id', $categoryIds))
-            ->orderBy('category_product.sort_order')
+            ->whereHas('categories', function ($query) use ($categoryIds) {
+                $query
+                    ->whereIn('categories.id', $categoryIds)
+                    ->orderBy('categories.sort_order');
+            })
             ->latest('products.created_at')
             ->paginate(24)
             ->withQueryString();

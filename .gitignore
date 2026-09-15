@@ -32,3 +32,6 @@ Thumbs.db
 /package-lock.json
 /storage/
 /public/.htaccess
+/public/test.json
+/public/test.txt
+/public/test.php

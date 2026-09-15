@@ -3,3 +3,7 @@
 @source '../../../../app/Filament/**/*';
 @source '../../../../resources/views/livewire/**/*';
 @source '../../../../resources/views/filament/admin/**/*';
+
+.fi-main,.fi-simple-main {
+    max-width: 100%;
+}

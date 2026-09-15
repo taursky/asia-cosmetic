@@ -19,6 +19,8 @@
         'resources/js/app.js',
     ])
 
+    @livewirestyles
+
     @stack('head')
 </head>
 
@@ -31,6 +33,6 @@
 @include('block.footer')
 
 @stack('scripts')
-
+@livewireScripts
 </body>
 </html>

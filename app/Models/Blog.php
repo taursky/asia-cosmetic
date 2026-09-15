@@ -29,6 +29,6 @@ class Blog extends Model
 
     public function scopeActive($query)
     {
-        return $query->where('blog.active', '=', 1);
+        return $query->where('blogs.active', true);
     }
 }

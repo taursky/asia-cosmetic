@@ -18,8 +18,13 @@ class BlogResource extends Resource
 {
     protected static ?string $model = Blog::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedNewspaper;
 
+    protected static string|\UnitEnum|null $navigationGroup = 'КОНТЕНТ';
+    protected static ?string $navigationLabel = 'Статьи';
+    protected static ?string $modelLabel = 'Статья';
+    protected static ?string $pluralModelLabel = 'Статьи';
+    protected static ?int $navigationSort = 10;
     protected static ?string $recordTitleAttribute = 'id';
 
     public static function form(Schema $schema): Schema

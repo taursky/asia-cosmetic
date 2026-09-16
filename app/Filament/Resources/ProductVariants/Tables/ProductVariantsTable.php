@@ -28,13 +28,15 @@ class ProductVariantsTable
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('product.lang.name')
                     ->label('Товар')
+                    ->width(50)
+                    ->limit(50)
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('lang.name')
                     ->label('Название варианта')
                     ->searchable(),
                 TextColumn::make('sku')
-                    ->label('SKU')
+                    ->label('Артикул')
                     ->searchable()
                     ->copyable()
                     ->sortable(),

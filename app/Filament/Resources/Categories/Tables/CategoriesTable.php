@@ -8,13 +8,17 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ToggleColumn;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class CategoriesTable
 {
     public static function configure(Table $table): Table
     {
-        return $table->columns([
+        return $table
+            ->defaultSort('id', 'asc')
+            ->columns([
             TextColumn::make('id')
                 ->label('ID')
                 ->sortable()
@@ -36,10 +40,28 @@ class CategoriesTable
             TextColumn::make('sort_order')
                 ->label('Порядок')
                 ->sortable(),
-        ])->recordActions([
+        ])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label('Активность')
+                    ->boolean()
+                    ->trueLabel('Только активные')
+                    ->falseLabel('Только неактивные')
+                    ->native(false),
+
+//                SelectFilter::make('level_depth')
+//                    ->label('Уровень вложенности')
+//                    ->options([
+//                        0 => 'Корневые (0)',
+//                        1 => '1 уровень',
+//                        2 => '2 уровень',
+//                        3 => '3 уровень',
+//                        4 => '4 уровень',
+//                    ]),
+            ])->recordActions([
             EditAction::make()->iconButton(),
         ])->toolbarActions([
             BulkActionGroup::make([DeleteBulkAction::make()]),
-        ])->defaultSort('sort_order');
+        ]);
     }
 }

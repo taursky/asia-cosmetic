@@ -56,8 +56,7 @@
                 </div>
             </div>
 
-            <a
-                href="{{ $url }}"
+            <a href="{{ $url }}"
                 aria-label="Открыть {{ $name }}"
                 class="grid size-10 shrink-0 place-items-center rounded-full bg-[#071d5d] text-white transition hover:bg-[#0d2e84]"
             >

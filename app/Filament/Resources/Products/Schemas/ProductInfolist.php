@@ -19,7 +19,9 @@ class ProductInfolist
                 IconEntry::make('is_active')->label('Активен')->boolean(),
                 IconEntry::make('is_visible')->label('На сайте')->boolean(),
                 TextEntry::make('updated_at')->label('Обновлён')->dateTime('d.m.Y H:i'),
-            ])->columns(3),
+            ])
+                ->columnSpanFull()
+                ->columns(3),
         ]);
     }
 }

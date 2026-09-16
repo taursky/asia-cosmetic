@@ -10,6 +10,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -22,14 +23,40 @@ class ProductsTable
         return $table
             ->defaultSort('id', 'desc')
             ->columns([
-                TextColumn::make('id')->label('ID')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('lang.name')->label('Название')->searchable()->sortable(),
-                TextColumn::make('sku')->label('Артикул')->searchable()->copyable(),
-                TextColumn::make('one_c_id')->label('ID 1С')->searchable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('variants_count')->counts('variants')->label('SKU')->badge(),
-                IconColumn::make('is_active')->label('Активен')->boolean(),
-                IconColumn::make('is_visible')->label('На сайте')->boolean(),
-                TextColumn::make('updated_at')->label('Обновлён')->dateTime('d.m.Y H:i')->sortable(),
+                TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('lang.name')
+                    ->label('Название')
+                    ->width(50)
+                    ->limit(50)
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('sku')
+                    ->label('Артикул')
+                    ->searchable()
+                    ->copyable(),
+                TextColumn::make('one_c_id')
+                    ->label('ID 1С')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('variants_count')
+                    ->counts('variants')
+                    ->label('SKU')
+                    ->badge(),
+                ToggleColumn::make('is_active')
+                    ->label('Активен')
+                    ->onColor('success')
+                    ->offColor('danger'),
+                IconColumn::make('is_visible')
+                    ->label('На сайте')
+                    ->boolean(),
+                TextColumn::make('updated_at')
+                    ->label('Обновлён')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable(),
             ])
             ->filters([
                 TernaryFilter::make('is_active')->label('Активность'),
@@ -37,9 +64,8 @@ class ProductsTable
                 TrashedFilter::make()->label('Удалённые'),
             ])
             ->recordActions([
-
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()->iconButton(),
+                EditAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 ...ProductImportExportActions::actions(),
@@ -48,7 +74,6 @@ class ProductsTable
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('id', 'desc');
+            ]);
     }
 }

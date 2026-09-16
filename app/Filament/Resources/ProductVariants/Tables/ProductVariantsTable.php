@@ -10,6 +10,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -18,13 +19,33 @@ class ProductVariantsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->defaultSort('product_id', 'desc')
             ->columns([
-                TextColumn::make('id')->label('ID')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('product.lang.name')->label('Товар')->searchable()->sortable(),
-                TextColumn::make('lang.name')->label('Название варианта')->searchable(),
-                TextColumn::make('sku')->label('SKU')->searchable()->copyable()->sortable(),
-                TextColumn::make('barcode')->label('Штрих-код')->searchable()->toggleable(),
-                TextColumn::make('stock')->label('Остаток')->numeric(decimalPlaces: 3)->sortable(),
+                TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('product.lang.name')
+                    ->label('Товар')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('lang.name')
+                    ->label('Название варианта')
+                    ->searchable(),
+                TextColumn::make('sku')
+                    ->label('SKU')
+                    ->searchable()
+                    ->copyable()
+                    ->sortable(),
+                TextColumn::make('barcode')
+                    ->label('Штрих-код')
+                    ->searchable()
+                    ->toggleable(),
+                TextColumn::make('stock')
+                    ->label('Остаток')
+                    ->numeric(decimalPlaces: 3)
+                    ->sortable(),
                 TextColumn::make('optionValues.lang.value')
                     ->label('Опции')
                     ->badge()
@@ -32,8 +53,13 @@ class ProductVariantsTable
                     ->limitList(3)
                     ->expandableLimitedList()
                     ->toggleable(),
-                IconColumn::make('is_active')->label('Активен')->boolean(),
-                TextColumn::make('sort_order')->label('Порядок')->sortable(),
+                ToggleColumn::make('is_active')
+                    ->label('Активен')
+                    ->onColor('success')
+                    ->offColor('danger'),
+                TextColumn::make('sort_order')
+                    ->label('Порядок')
+                    ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Обновлён')
                     ->dateTime('d.m.Y H:i')
@@ -44,8 +70,8 @@ class ProductVariantsTable
                 TrashedFilter::make()->label('Удалённые'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()->iconButton(),
+                EditAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
@@ -53,7 +79,6 @@ class ProductVariantsTable
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),
                 ]),
-            ])
-            ->defaultSort('product_id');
+            ]);
     }
 }

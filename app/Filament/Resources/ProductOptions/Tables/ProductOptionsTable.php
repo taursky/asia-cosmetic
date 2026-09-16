@@ -57,8 +57,8 @@ class ProductOptionsTable
                 TernaryFilter::make('is_active')->label('Активность'),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()->iconButton(),
+                EditAction::make()->iconButton(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

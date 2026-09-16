@@ -10,6 +10,7 @@ use App\Models\OptionValue;
 use App\Filament\Support\ImageUploadFields;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -116,13 +117,30 @@ class ProductForm
                         ->label('Язык')
                         ->options(self::locales())
                         ->required(),
-                    TextInput::make('name')->label('Название')->required()->maxLength(255),
-                    TextInput::make('slug')->label('Slug')->required()->maxLength(255),
-                    Textarea::make('short_description')->label('Краткое описание')->rows(3)->columnSpanFull(),
-                    Textarea::make('description')->label('Описание')->rows(8)->columnSpanFull(),
-                    TextInput::make('seo_title')->label('SEO title')->maxLength(255),
-                    Textarea::make('seo_keywords')->label('SEO keywords')->rows(2),
-                    Textarea::make('seo_description')->label('SEO description')->rows(3)->columnSpanFull(),
+                    TextInput::make('name')
+                        ->label('Название')
+                        ->required()
+                        ->maxLength(255),
+                    TextInput::make('slug')
+                        ->label('Slug')
+                        ->required()
+                        ->maxLength(255),
+                    RichEditor::make('short_description')
+                        ->label('Краткое описание')
+                        ->columnSpanFull(),
+                    RichEditor::make('description')
+                        ->label('Описание')
+                        ->columnSpanFull(),
+                    TextInput::make('seo_title')
+                        ->label('SEO title')
+                        ->maxLength(255),
+                    Textarea::make('seo_keywords')
+                        ->label('SEO keywords')
+                        ->rows(2),
+                    Textarea::make('seo_description')
+                        ->label('SEO description')
+                        ->rows(3)
+                        ->columnSpanFull(),
                 ])
                 ->columns(2)
                 ->columnSpanFull(),
@@ -284,18 +302,7 @@ class ProductForm
     private static function imageFields(): array
     {
         return [
-//            FileUpload::make('name')
-//                ->label('Файл')
-//                ->image()
-//                ->disk('public')
-//                ->directory('catalog')
-//                ->imageEditor()
-//                ->required()
-//                ->columnSpan(2),
-//            Toggle::make('is_primary')->label('Основное'),
-//            TextInput::make('position')->label('Позиция')->numeric()->default(1)->required(),
-//            TextInput::make('mime_type')->label('MIME')->maxLength(255),
-            ImageUploadFields::schema('catalog/products')
+            ...ImageUploadFields::schema('catalog/products'),
         ];
     }
 
@@ -304,7 +311,7 @@ class ProductForm
         return [
             'ru' => 'Русский',
             'en' => 'English',
-            'zh' => '中文',
+//            'zh' => '中文',
         ];
     }
 }

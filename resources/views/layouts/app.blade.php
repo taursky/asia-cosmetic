@@ -18,9 +18,7 @@
         'resources/css/app.css',
         'resources/js/app.js',
     ])
-
-    @livewirestyles
-
+{{--    @livewirestyles--}}
     @stack('head')
 </head>
 
@@ -33,6 +31,6 @@
 @include('block.footer')
 
 @stack('scripts')
-@livewireScripts
+{{--@livewireScripts--}}
 </body>
 </html>

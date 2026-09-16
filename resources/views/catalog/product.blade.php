@@ -140,7 +140,7 @@
 
                 @if($product->lang?->short_description)
                     <div class="mt-8 rounded-2xl bg-slate-50 p-5 text-sm leading-7 text-slate-700">
-                        {{ $product->lang->short_description }}
+                        {!! $product->lang->short_description !!}
                     </div>
                 @endif
 

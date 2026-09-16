@@ -42,6 +42,21 @@ class ProductVariant extends Model
         return $this->hasMany(ProductPrice::class, 'product_variant_id');
     }
 
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(ProductVariantStock::class, 'product_variant_id');
+    }
+
+    public function warehouses(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Warehouse::class,
+            'product_variant_stocks'
+        )
+            ->withPivot(['quantity', 'reserved', 'available', 'synced_at'])
+            ->withTimestamps();
+    }
+
     public function images(): MorphMany
     {
         return $this->morphMany(Image::class, 'imageable');

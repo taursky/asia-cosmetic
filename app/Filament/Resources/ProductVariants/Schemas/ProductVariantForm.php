@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ProductVariants\Schemas;
 
 use App\Models\OptionValue;
 use App\Models\ProductPriceType;
+use App\Models\Warehouse;
 use App\Filament\Support\ImageUploadFields;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -122,6 +123,72 @@ class ProductVariantForm
                                     TextInput::make('min_quantity')->label('Мин. количество')->numeric()->step(0.001)->default(1)->required(),
                                 ])
                                 ->columns(5),
+                        ]),
+
+
+                    Tab::make('Остатки по складам')
+                        ->icon('heroicon-o-building-storefront')
+                        ->schema([
+                            Section::make('Остатки SKU по складам')
+                                ->description('Данные синхронизируются с 1С. Общий stock SKU можно использовать как агрегированный остаток по активным складам.')
+                                ->schema([
+                                    Repeater::make('stocks')
+                                        ->relationship('stocks')
+                                        ->label('Склады')
+                                        ->addActionLabel('Добавить склад')
+                                        ->collapsible()
+                                        ->itemLabel(function (array $state): ?string {
+                                            if (empty($state['warehouse_id'])) {
+                                                return 'Склад';
+                                            }
+
+                                            return Warehouse::query()
+                                                ->whereKey($state['warehouse_id'])
+                                                ->value('name') ?? 'Склад';
+                                        })
+                                        ->schema([
+                                            Select::make('warehouse_id')
+                                                ->label('Склад')
+                                                ->options(fn (): array => Warehouse::query()
+                                                    ->orderByDesc('is_active')
+                                                    ->orderBy('sort_order')
+                                                    ->orderBy('name')
+                                                    ->pluck('name', 'id')
+                                                    ->all())
+                                                ->searchable()
+                                                ->preload()
+                                                ->required()
+                                                ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+
+                                            TextInput::make('quantity')
+                                                ->label('Фактический остаток')
+                                                ->numeric()
+                                                ->step(0.001)
+                                                ->default(0)
+                                                ->required(),
+
+                                            TextInput::make('reserved')
+                                                ->label('Резерв')
+                                                ->numeric()
+                                                ->step(0.001)
+                                                ->default(0)
+                                                ->required(),
+
+                                            TextInput::make('available')
+                                                ->label('Доступно')
+                                                ->numeric()
+                                                ->step(0.001)
+                                                ->default(0)
+                                                ->required(),
+
+                                            TextInput::make('synced_at')
+                                                ->label('Синхронизация')
+                                                ->disabled()
+                                                ->dehydrated(false),
+                                        ])
+                                        ->columns(5)
+                                        ->columnSpanFull(),
+                                ]),
                         ]),
 
                     Tab::make('Изображения')

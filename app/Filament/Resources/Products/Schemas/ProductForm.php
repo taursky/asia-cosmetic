@@ -46,9 +46,13 @@ class ProductForm
                         ->icon('heroicon-o-adjustments-horizontal')
                         ->schema(self::attributesTab()),
 
-                    Tab::make('Опции / SKU')
-                        ->icon('heroicon-o-squares-2x2')
+                    Tab::make('Опции')
+                        ->icon('heroicon-o-adjustments-horizontal')
                         ->schema(self::optionsTab()),
+
+                    Tab::make('Варианты')
+                        ->icon('heroicon-o-squares-2x2')
+                        ->schema(self::variantsTab()),
 
                     Tab::make('Изображения')
                         ->icon('heroicon-o-photo')
@@ -214,7 +218,12 @@ class ProductForm
                         ))
                         ->columnSpanFull(),
                 ]),
+        ];
+    }
 
+    private static function variantsTab(): array
+    {
+        return [
             Repeater::make('variants')
                 ->relationship('variants')
                 ->label('Опции / SKU')

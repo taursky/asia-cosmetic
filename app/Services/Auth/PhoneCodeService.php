@@ -35,7 +35,8 @@ class PhoneCodeService
         $length = (int) config('customer_auth.sms.code_length', 6);
         $min = 10 ** ($length - 1);
         $max = (10 ** $length) - 1;
-        $code = (string) random_int($min, $max);
+        //todo: для теста.
+        $code = '101010';//(string) random_int($min, $max);
 
         PhoneAuthCode::query()->create([
             'phone' => $phone,

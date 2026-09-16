@@ -12,10 +12,7 @@
 
             @if($category->parent?->lang)
                 <span>/</span>
-                <a
-                    href="{{ route('catalog.category', $category->parent->lang->slug) }}"
-                    class="hover:text-slate-950"
-                >
+                <a href="{{ route('catalog.category', $category->parent->lang->slug) }}" class="hover:text-slate-950">
                     {{ $category->parent->lang->name }}
                 </a>
             @endif
@@ -28,7 +25,8 @@
 
             @if($category->lang?->description)
                 <div class="mt-4 text-sm leading-7 text-slate-600">
-                    {!! nl2br(e($category->lang->description)) !!}
+{{--                    {!! nl2br(e($category->lang->description)) !!}--}}
+                    {!! nl2br($category->lang->description) !!}
                 </div>
             @endif
         </div>

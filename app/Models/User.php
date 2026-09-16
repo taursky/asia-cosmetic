@@ -4,7 +4,10 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -54,4 +57,10 @@ class User extends Authenticatable
             ->where('is_active', true)
             ->exists();
     }
+
+    public function customerRole(): BelongsTo { return $this->belongsTo(CustomerRole::class); }
+    public function customerProfile(): HasOne { return $this->hasOne(CustomerProfile::class); }
+    public function customerRoleHistory(): HasMany { return $this->hasMany(CustomerRoleHistory::class); }
+    public function customerDocuments(): HasMany { return $this->hasMany(CustomerDocument::class); }
+    public function orders(): HasMany { return $this->hasMany(Order::class); }
 }

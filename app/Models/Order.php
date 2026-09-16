@@ -9,6 +9,10 @@ class Order extends Model
 {
     protected $guarded = [];
 
+    private function __construct() {
+        parent::__construct();
+    }
+
     protected function casts(): array
     {
         return [
@@ -21,6 +25,7 @@ class Order extends Model
             'customer_data' => 'array',
             'delivery_data' => 'array',
             'payment_data' => 'array',
+            'pricing_meta' => 'array',
         ];
     }
 

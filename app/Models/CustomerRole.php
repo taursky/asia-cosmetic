@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class CustomerRole extends Model
@@ -22,5 +23,10 @@ class CustomerRole extends Model
             User::class,
             'customer_role_user',
         )->withTimestamps();
+    }
+
+    public function priceType(): BelongsTo
+    {
+        return $this->belongsTo(ProductPriceType::class, 'product_price_type_id');
     }
 }

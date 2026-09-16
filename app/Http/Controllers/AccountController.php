@@ -19,7 +19,8 @@ class AccountController extends Controller
     {
         $user = $request->user()->load('customerRoles');
 
-        return view('account.index', compact('user'));
+//        return view('account.index', compact('user'));
+        return view('account.vue', compact('user'));
     }
 
     public function updateProfile(Request $request): RedirectResponse

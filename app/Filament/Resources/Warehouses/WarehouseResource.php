@@ -18,7 +18,7 @@ class WarehouseResource extends Resource
 {
     protected static ?string $model = Warehouse::class;
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingStorefront;
-    protected static string|\UnitEnum|null $navigationGroup = 'Продукты';
+    protected static string|\UnitEnum|null $navigationGroup = 'СКЛАДЫ';
     protected static ?string $navigationLabel = 'Склады';
     protected static ?string $modelLabel = 'Склад';
     protected static ?string $pluralModelLabel = 'Склады';

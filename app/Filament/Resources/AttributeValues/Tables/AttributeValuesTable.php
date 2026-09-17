@@ -24,7 +24,8 @@ class AttributeValuesTable
         ])->filters([
             SelectFilter::make('attribute_id')->relationship('attribute', 'code')->label('Атрибут')->searchable()->preload(),
         ])->recordActions([
-            ViewAction::make(), EditAction::make(),
+            ViewAction::make()->iconButton(),
+            EditAction::make()->iconButton(),
         ])->toolbarActions([
             BulkActionGroup::make([DeleteBulkAction::make()]),
         ])->defaultSort('sort_order');

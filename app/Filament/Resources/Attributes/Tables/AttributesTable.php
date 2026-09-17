@@ -27,7 +27,7 @@ class AttributesTable
             TernaryFilter::make('is_filterable')->label('В фильтрах'),
             TernaryFilter::make('is_variant')->label('SKU-атрибуты'),
         ])->recordActions([
-            EditAction::make(),
+            EditAction::make()->iconButton(),
         ])->toolbarActions([
             BulkActionGroup::make([DeleteBulkAction::make()]),
         ])->defaultSort('sort_order');

@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 
@@ -18,17 +19,26 @@ class ImagesTable
         return $table->columns([
             ImageColumn::make('name')->label('Фото')->disk('public')->square(),
             TextColumn::make('imageable_type')->label('Тип')->formatStateUsing(fn (string $state) => class_basename($state))->badge(),
-            TextColumn::make('imageable_id')->label('ID')->sortable(),
-            TextColumn::make('position')->label('Позиция')->sortable(),
-            IconColumn::make('is_primary')->label('Основное')->boolean(),
-            TextColumn::make('mime_type')->label('MIME')->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('imageable_id')
+                ->label('IMAGEBABLE ID')
+                ->sortable(),
+            TextColumn::make('position')
+                ->label('Позиция')
+                ->sortable(),
+            ToggleColumn::make('is_primary')
+                ->label('Основное')
+                ->onColor('success')
+                ->offColor('danger'),
+            TextColumn::make('mime_type')
+                ->label('MIME')
+                ->toggleable(isToggledHiddenByDefault: true),
         ])->filters([
             SelectFilter::make('imageable_type')->label('Тип')->options([
                 \App\Models\Product::class => 'Товар',
                 \App\Models\Option::class => 'Опция / SKU',
             ]),
         ])->recordActions([
-            EditAction::make(),
+            EditAction::make()->iconButton(),
         ])->toolbarActions([
             BulkActionGroup::make([DeleteBulkAction::make()]),
         ])->defaultSort('position');

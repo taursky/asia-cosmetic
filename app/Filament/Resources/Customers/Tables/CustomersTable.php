@@ -26,11 +26,15 @@ class CustomersTable
             IconColumn::make('is_active')->label('Активен')->boolean(),
             TextColumn::make('last_login_at')->label('Последний вход')->dateTime('d.m.Y H:i')->sortable()->toggleable(),
             TextColumn::make('created_at')->label('Создан')->dateTime('d.m.Y H:i')->sortable(),
-        ])->filters([
-            Filter::make('id')->schema([TextInput::make('id')->label('ID')->numeric()])->query(fn (Builder $q, array $data) => $q->when(filled($data['id'] ?? null), fn (Builder $q) => $q->whereKey((int)$data['id']))),
-            TernaryFilter::make('is_active')->label('Активность'),
-        ])->recordActions([EditAction::make()])
-          ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])
-          ->defaultSort('id', 'desc');
+        ])
+            ->filters([
+                Filter::make('id')->schema([TextInput::make('id')->label('ID')->numeric()])->query(fn(Builder $q, array $data) => $q->when(filled($data['id'] ?? null), fn(Builder $q) => $q->whereKey((int)$data['id']))),
+                TernaryFilter::make('is_active')->label('Активность'),
+            ])
+            ->recordActions([
+                EditAction::make()->iconButton(),
+            ])
+            ->toolbarActions([BulkActionGroup::make([DeleteBulkAction::make()])])
+            ->defaultSort('id', 'desc');
     }
 }

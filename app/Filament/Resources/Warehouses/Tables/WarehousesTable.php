@@ -26,7 +26,7 @@ class WarehousesTable
                 TernaryFilter::make('is_active')->label('Активность'),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()->iconButton(),
             ])
             ->defaultSort('sort_order');
     }

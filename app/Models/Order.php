@@ -9,10 +9,6 @@ class Order extends Model
 {
     protected $guarded = [];
 
-    private function __construct() {
-        parent::__construct();
-    }
-
     protected function casts(): array
     {
         return [

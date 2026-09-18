@@ -26,13 +26,7 @@ Route::prefix('1c/v1')
         Route::post('/orders/{order:uuid}/status', [OneCController::class, 'orderStatus']);
     });
 
-Route::middleware('auth:web')->prefix('api/cart')->name('cart.api.')->group(function (): void {
-    Route::get('/', [CartController::class, 'show'])->name('show');
-    Route::post('/items', [CartController::class, 'add'])->name('items.add');
-    Route::patch('/items/{item}', [CartController::class, 'update'])->name('items.update');
-    Route::delete('/items/{item}', [CartController::class, 'destroy'])->name('items.destroy');
-    Route::post('/checkout', CheckoutController::class)->name('checkout');
-});
+
 
 Route::middleware('auth:web')->prefix('account/api')->name('account.api.')->group(function (): void {
     Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');

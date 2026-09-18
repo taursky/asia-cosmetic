@@ -58,7 +58,11 @@ class User extends Authenticatable
             ->exists();
     }
 
-    public function customerRole(): BelongsTo { return $this->belongsTo(CustomerRole::class); }
+    public function customerRole(): BelongsTo
+    {
+        return $this->belongsTo(CustomerRole::class);
+    }
+
     public function customerProfile(): HasOne { return $this->hasOne(CustomerProfile::class); }
     public function customerRoleHistory(): HasMany { return $this->hasMany(CustomerRoleHistory::class); }
     public function customerDocuments(): HasMany { return $this->hasMany(CustomerDocument::class); }

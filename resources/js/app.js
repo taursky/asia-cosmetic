@@ -5,11 +5,18 @@ import { createApp } from 'vue'
 import AccountApp from './account/AccountApp.vue'
 import Counter from './components/Counter.vue'
 import HomeHero from './components/HomeHero.vue'
+import AddToCartButton from "./cart/AddToCartButton.vue";
+import CartButton from "./cart/CartButton.vue";
+import CartDrawer from "./cart/CartDrawer.vue";
+
 
 const components = {
     Counter,
     HomeHero,
     AccountApp,
+    AddToCartButton,
+    CartButton,
+    CartDrawer,
 }
 
 document.querySelectorAll('[data-vue-component]').forEach((element) => {

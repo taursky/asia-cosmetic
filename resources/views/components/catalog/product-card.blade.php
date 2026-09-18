@@ -2,6 +2,7 @@
 
 @php
     $variant = $product->variants->first();
+    $cartVariant = $product->variants->first();
     $prices = $variant?->prices->isNotEmpty() ? $variant->prices : $product->prices;
     $retail = $prices->first(fn ($price) => $price->priceType?->code === 'retail') ?? $prices->first();
     $image = $product->images->first() ?? $variant?->images->first();
@@ -54,6 +55,10 @@
                 <div class="text-lg font-semibold tracking-tight text-zinc-950">
                     {{ $retail?->amount !== null ? number_format((float) $retail->amount, 0, ',', ' ') . ' ₽' : 'Цена по запросу' }}
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <x-catalog.add-to-cart :variant="$cartVariant" />
             </div>
 
             <a href="{{ $url }}"

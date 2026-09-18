@@ -11,7 +11,6 @@
 
         <x-catalog.product-section id="sale-products" title="Скидки" :products="$saleProducts" />
         <x-catalog.product-section id="hit-products" title="Хиты продаж" :products="$hitProducts" />
-
         @if ($categories->isNotEmpty())
             <section class="bg-zinc-50 py-12 sm:py-16">
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

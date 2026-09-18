@@ -32,5 +32,6 @@
 
 @stack('scripts')
 {{--@livewireScripts--}}
+@include('block.cart-vue')
 </body>
 </html>

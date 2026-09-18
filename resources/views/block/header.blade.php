@@ -30,9 +30,12 @@
 
         <div class="flex items-center gap-1 sm:gap-2">
             <a href="#" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Избранное">♡</a>
-            <a href="#" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Корзина">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-5"><path d="M3 4h2l2 11h10l2-8H6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1"/><circle cx="17" cy="19" r="1"/></svg>
-            </a>
+<!--            <a href="#" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Корзина">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-5">
+                    <path d="M3 4h2l2 11h10l2-8H6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>
+                </svg>
+            </a>-->
+            @include('block.cart-button-vue')
 
             @include('block.auth-dropdown')
         </div>

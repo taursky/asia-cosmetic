@@ -10,6 +10,8 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Api\Cart\CartController;
+use App\Http\Controllers\Api\Cart\CheckoutController;
 
 Route::middleware('guest:web')->group(function (): void {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -80,3 +82,28 @@ Route::prefix('catalog')->name('catalog.')->group(function (): void {
 Route::get('/product/{productSlug}', [CatalogController::class, 'product'])
     ->where('productSlug', '[A-Za-z0-9\-_]+')
     ->name('catalog.product');
+
+Route::middleware('auth:web')->group(function (): void {
+    Route::prefix('api/cart')->name('cart.api.')->group(function (): void {
+        Route::get('/', [CartController::class, 'show'])->name('show');
+        Route::post('/items', [CartController::class, 'store'])->name('items.store');
+        Route::patch('/items/{item}', [CartController::class, 'update'])->name('items.update');
+        Route::delete('/items/{item}', [CartController::class, 'destroy'])->name('items.destroy');
+    });
+
+    Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+});
+
+//Route::middleware('auth:web')
+//    ->prefix('api/cart')
+//    ->name('cart.api.')
+//    ->group(function (): void {
+//        Route::get('/', [CartController::class, 'show'])->name('show');
+//        Route::post('/items', [CartController::class, 'add'])->name('items.add');
+//        Route::patch('/items/{item}', [CartController::class, 'update'])->name('items.update');
+//        Route::delete('/items/{item}', [CartController::class, 'destroy'])->name('items.destroy');
+//
+//        Route::post('/checkout', CheckoutController::class)->name('checkout');
+//    });

@@ -3,56 +3,81 @@
 namespace App\Http\Controllers\Api\Cart;
 
 use App\Http\Controllers\Controller;
-use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\ProductVariant;
 use App\Services\Cart\CartPricingService;
+use App\Services\Cart\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
-    private function cart(Request $request): Cart
+    public function __construct(
+        private readonly CartService $carts,
+        private readonly CartPricingService $pricing,
+    ) {}
+
+    public function show(Request $request): JsonResponse
     {
-        return Cart::query()->firstOrCreate(['user_id' => $request->user()->id]);
+        $cart = $this->carts->cartFor($request->user());
+
+        return response()->json(
+            $this->pricing->calculate($cart)
+        );
     }
 
-    public function show(Request $request, CartPricingService $pricing): JsonResponse
-    {
-        $cart = $this->cart($request)->load('items.variant.lang');
-        return response()->json(['cart' => $cart, 'quote' => $pricing->quote($request->user(), $cart)]);
-    }
-
-    public function add(Request $request, CartPricingService $pricing): JsonResponse
+    public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'product_variant_id' => ['required', 'integer', 'exists:product_variants,id'],
+            'variant_id' => ['required', 'integer', 'exists:product_variants,id'],
             'quantity' => ['required', 'numeric', 'min:0.001'],
         ]);
 
-        $variant = ProductVariant::query()->where('is_active', true)->findOrFail($data['product_variant_id']);
-        $cart = $this->cart($request);
+        $variant = ProductVariant::query()
+            ->with('product')
+            ->findOrFail($data['variant_id']);
 
-        $item = $cart->items()->firstOrNew(['product_variant_id' => $variant->id]);
-        $item->quantity = (float) ($item->exists ? $item->quantity : 0) + (float) $data['quantity'];
-        $item->save();
+        $cart = $this->carts->add(
+            $request->user(),
+            $variant,
+            (float) $data['quantity'],
+        );
 
-        return response()->json(['cart' => $cart->fresh('items.variant.lang'), 'quote' => $pricing->quote($request->user(), $cart->fresh())]);
+        return response()->json(
+            $this->pricing->calculate($cart)
+        );
     }
 
-    public function update(Request $request, int $item, CartPricingService $pricing): JsonResponse
+    public function update(Request $request, CartItem $item): JsonResponse
     {
-        $data = $request->validate(['quantity' => ['required', 'numeric', 'min:0.001']]);
-        $cart = $this->cart($request);
-        $cartItem = $cart->items()->findOrFail($item);
-        $cartItem->update(['quantity' => $data['quantity']]);
+        $data = $request->validate([
+            'quantity' => ['required', 'numeric', 'min:0'],
+        ]);
 
-        return response()->json(['quote' => $pricing->quote($request->user(), $cart->fresh())]);
+        $item->load(['cart', 'variant']);
+
+        $cart = $this->carts->update(
+            $request->user(),
+            $item,
+            (float) $data['quantity'],
+        );
+
+        return response()->json(
+            $this->pricing->calculate($cart)
+        );
     }
 
-    public function destroy(Request $request, int $item, CartPricingService $pricing): JsonResponse
+    public function destroy(Request $request, CartItem $item): JsonResponse
     {
-        $cart = $this->cart($request);
-        $cart->items()->findOrFail($item)->delete();
-        return response()->json(['quote' => $pricing->quote($request->user(), $cart->fresh())]);
+        $item->load('cart');
+
+        $cart = $this->carts->remove(
+            $request->user(),
+            $item,
+        );
+
+        return response()->json(
+            $this->pricing->calculate($cart)
+        );
     }
 }

@@ -12,6 +12,7 @@ use App\Services\OneC\OrderExchangeService;
 use App\Services\OneC\PriceSyncService;
 use App\Services\OneC\StockSyncService;
 use App\Services\OneC\SyncLogger;
+use App\Services\OneC\WarehouseSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -19,6 +20,7 @@ class OneCController extends Controller
 {
     public function __construct(
         private readonly SyncLogger $logger,
+        private readonly WarehouseSyncService $warehouses,
         private readonly CategorySyncService $categories,
         private readonly CatalogSyncService $catalog,
         private readonly PriceSyncService $prices,
@@ -34,6 +36,11 @@ class OneCController extends Controller
             'version' => 'v1',
             'time' => now()->toIso8601String(),
         ]);
+    }
+
+    public function warehouses(BatchRequest $request): JsonResponse
+    {
+        return $this->batch('warehouses', $request, fn ($items) => $this->warehouses->sync($items));
     }
 
     public function categories(BatchRequest $request): JsonResponse
@@ -83,14 +90,25 @@ class OneCController extends Controller
     private function batch(string $entity, BatchRequest $request, callable $callback): JsonResponse
     {
         $data = $request->validated();
+
         $result = $this->logger->run(
             $entity,
             '1c_to_site',
             $data['exchange_id'] ?? null,
             $data,
-            fn () => $callback($data['items'])
+            fn () => $callback($data['items']),
         );
 
-        return response()->json(['ok' => count($result->errors) === 0] + $result->toArray(), count($result->errors) ? 207 : 200);
+        $payload = is_object($result) && method_exists($result, 'toArray')
+            ? $result->toArray()
+            : (array) $result;
+
+        $errors = $payload['errors'] ?? [];
+
+        return response()->json(
+            ['ok' => empty($errors)] + $payload,
+            empty($errors) ? 200 : 207,
+        );
     }
+
 }

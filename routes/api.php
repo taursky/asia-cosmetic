@@ -17,6 +17,7 @@ Route::prefix('1c/v1')
     ->group(function (): void {
         Route::get('/ping', [OneCController::class, 'ping']);
 
+        Route::post('/warehouses/batch', [OneCController::class, 'warehouses']);
         Route::post('/categories/batch', [OneCController::class, 'categories']);
         Route::post('/products/batch', [OneCController::class, 'products']);
         Route::post('/prices/batch', [OneCController::class, 'prices']);
@@ -25,8 +26,6 @@ Route::prefix('1c/v1')
         Route::get('/orders', [OneCController::class, 'orders']);
         Route::post('/orders/{order:uuid}/status', [OneCController::class, 'orderStatus']);
     });
-
-
 
 Route::middleware('auth:web')->prefix('account/api')->name('account.api.')->group(function (): void {
     Route::get('/profile', [CustomerProfileController::class, 'show'])->name('profile');

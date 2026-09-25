@@ -20,6 +20,7 @@ Route::prefix('1c/v1')
         Route::post('/warehouses/batch', [OneCController::class, 'warehouses']);
         Route::post('/categories/batch', [OneCController::class, 'categories']);
         Route::post('/products/batch', [OneCController::class, 'products']);
+        Route::post('/price-types/batch', [OneCController::class, 'priceTypes']);
         Route::post('/prices/batch', [OneCController::class, 'prices']);
         Route::post('/stocks/batch', [OneCController::class, 'stocks']);
 

@@ -14,6 +14,7 @@ class Warehouse extends Model
         'code',
         'name',
         'is_active',
+        'is_main',
         'sort_order',
         'synced_at',
     ];
@@ -22,6 +23,7 @@ class Warehouse extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_main' => 'boolean',
             'synced_at' => 'datetime',
         ];
     }

@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
@@ -13,14 +14,17 @@ class CatalogController extends Controller
     public function index(Request $request): View
     {
         $locale = app()->getLocale();
+        $categoryIds = $this->categoryIdsWithActiveProducts();
 
         $categories = Category::query()
             ->where('is_active', true)
             ->whereNull('parent_id')
+            ->whereIn('id', $categoryIds)
             ->with([
                 'lang',
                 'children' => fn ($query) => $query
                     ->where('is_active', true)
+                    ->whereIn('id', $categoryIds)
                     ->orderBy('sort_order'),
                 'children.lang',
             ])
@@ -41,9 +45,11 @@ class CatalogController extends Controller
     public function category(Request $request, string $categorySlug): View
     {
         $locale = app()->getLocale();
+        $visibleCategoryIds = $this->categoryIdsWithActiveProducts();
 
         $category = Category::query()
             ->where('is_active', true)
+            ->whereIn('categories.id', $visibleCategoryIds)
             ->whereHas('langs', fn (Builder $query) => $query
                 ->where('lang', $locale)
                 ->where('slug', $categorySlug))
@@ -52,8 +58,8 @@ class CatalogController extends Controller
                 'parent.lang',
                 'children' => fn ($query) => $query
                     ->where('is_active', true)
-                    ->orderBy('sort_order')
-                ,
+                    ->whereIn('id', $visibleCategoryIds)
+                    ->orderBy('sort_order'),
                 'children.lang',
             ])
             ->firstOrFail();
@@ -163,6 +169,53 @@ class CatalogController extends Controller
                     ->with('priceType')
                     ->orderBy('min_quantity'),
             ]);
+    }
+
+    /**
+     * Категории, в которых есть активные/видимые товары, плюс их родители.
+     * Это позволяет показывать родительский раздел каталога, даже если товары
+     * находятся только в его дочерних категориях.
+     */
+    private function categoryIdsWithActiveProducts(): array
+    {
+        $directIds = DB::table('category_product')
+            ->join('products', 'products.id', '=', 'category_product.product_id')
+            ->where('products.is_active', true)
+            ->where('products.is_visible', true)
+            ->whereNull('products.deleted_at')
+            ->distinct()
+            ->pluck('category_product.category_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if ($directIds === []) {
+            return [];
+        }
+
+        $parents = Category::query()
+            ->where('is_active', true)
+            ->pluck('parent_id', 'id');
+
+        $result = array_fill_keys($directIds, true);
+
+        foreach ($directIds as $categoryId) {
+            $currentId = $categoryId;
+            $guard = 0;
+
+            while ($guard++ < 100) {
+                $parentId = $parents->get($currentId);
+
+                if (! $parentId) {
+                    break;
+                }
+
+                $parentId = (int) $parentId;
+                $result[$parentId] = true;
+                $currentId = $parentId;
+            }
+        }
+
+        return array_map('intval', array_keys($result));
     }
 
     private function categoryTreeIds(Category $category): array

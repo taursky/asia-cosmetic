@@ -26,6 +26,11 @@ class ProductVariantsTable
                     ->sortable()
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('one_c_id')
+                    ->label('ID-1С')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('product.lang.name')
                     ->label('Товар')
                     ->width(50)

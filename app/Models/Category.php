@@ -40,6 +40,6 @@ class Category extends Model
 
     public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Product::class)->withPivot('sort_order');
+        return $this->belongsToMany(Product::class)->active()->withPivot('sort_order');
     }
 }

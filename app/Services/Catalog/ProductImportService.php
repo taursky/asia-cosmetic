@@ -4,6 +4,8 @@ namespace App\Services\Catalog;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\ProductVariantStock;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +26,7 @@ class ProductImportService
         'options_created' => 0,
         'option_values_created' => 0,
         'prices_written' => 0,
+        'stocks_written' => 0,
         'categories_created' => 0,
         'images_written' => 0,
         'warnings' => [],
@@ -45,6 +48,7 @@ class ProductImportService
         [$product, $variant] = DB::transaction(function () use ($row): array {
             $product = $this->upsertProduct($row);
             $variant = $this->upsertVariant($product, $row);
+            $this->syncStock($variant, $row);
 
             $this->upsertProductLang($product, $row);
             $this->syncPrices($product, $variant, $row);
@@ -122,13 +126,25 @@ class ProductImportService
 
     private function upsertVariant(Product $product, array $row): ProductVariant
     {
+        $oneCId = $this->nullableString($row['Дополнительное поле: ID 1С'] ?? null);
         $externalId = $this->nullableString($row['Внешний ID'] ?? null)
             ?: $this->nullableString($row['ID варианта'] ?? null);
         $sku = $this->nullableString($row['Артикул'] ?? null);
 
         $variant = null;
 
-        if ($externalId) {
+        // В текущем файле отдельного GUID варианта нет: ID 1С относится
+        // к номенклатурной позиции строки, поэтому сохраняем его и в SKU.
+        // Поиск по one_c_id выполняем первым, чтобы повторный импорт
+        // корректно обновлял уже существующий вариант.
+        if ($oneCId) {
+            $variant = ProductVariant::withTrashed()
+                ->where('product_id', $product->getKey())
+                ->where('one_c_id', $oneCId)
+                ->first();
+        }
+
+        if (! $variant && $externalId) {
             $variant = ProductVariant::withTrashed()
                 ->where('product_id', $product->getKey())
                 ->where('external_id', $externalId)
@@ -149,6 +165,7 @@ class ProductImportService
         $variant->fill([
             'product_id' => $product->getKey(),
             'external_id' => $externalId,
+            'one_c_id' => $oneCId,
             'sku' => $sku,
             'barcode' => $this->nullableString($row['Штрих-код'] ?? null),
             'is_active' => true,
@@ -167,6 +184,170 @@ class ProductImportService
         ++$this->stats[$isNew ? 'variants_created' : 'variants_updated'];
 
         return $variant;
+    }
+
+    private function syncStock(ProductVariant $variant, array $row): void
+    {
+        $quantity = $this->decimal($row['Остаток'] ?? null);
+
+        if ($quantity === null) {
+            return;
+        }
+
+        $warehouse = $this->resolveWarehouse($row);
+
+        ProductVariantStock::query()->updateOrCreate(
+            [
+                'product_variant_id' => $variant->getKey(),
+                'warehouse_id' => $warehouse->getKey(),
+            ],
+            [
+                'quantity' => $quantity,
+                'reserved' => 0,
+                'available' => $quantity,
+                'synced_at' => now(),
+            ],
+        );
+
+        // Для совместимости с текущим каталогом поле stock остаётся агрегированным.
+        // После импорта из файла обновляем его как сумму доступных остатков
+        // по всем активным складам.
+        $totalAvailable = ProductVariantStock::query()
+            ->where('product_variant_id', $variant->getKey())
+            ->whereHas('warehouse', fn ($query) => $query->where('is_active', true))
+            ->sum('available');
+
+        $variant->forceFill([
+            'stock' => $totalAvailable,
+        ])->save();
+
+        ++$this->stats['stocks_written'];
+    }
+
+    private function resolveWarehouse(array $row): Warehouse
+    {
+        $oneCId = $this->firstString($row, [
+            'ID склада 1С',
+            'Склад: ID 1С',
+            'Склад ID 1С',
+            'GUID склада',
+        ]);
+
+        if ($oneCId) {
+            $warehouse = Warehouse::query()
+                ->where('one_c_id', $oneCId)
+                ->first();
+
+            if ($warehouse) {
+                return $warehouse;
+            }
+        }
+
+        $externalId = $this->firstString($row, [
+            'ID склада',
+            'Внешний ID склада',
+        ]);
+
+        if ($externalId) {
+            $warehouse = Warehouse::query()
+                ->where('external_id', $externalId)
+                ->first();
+
+            if ($warehouse) {
+                return $warehouse;
+            }
+        }
+
+        $code = $this->firstString($row, [
+            'Код склада',
+            'Склад: Код',
+        ]);
+
+        if ($code) {
+            $warehouse = Warehouse::query()
+                ->where('code', $code)
+                ->first();
+
+            if ($warehouse) {
+                return $warehouse;
+            }
+        }
+
+        $name = $this->firstString($row, [
+            'Склад',
+            'Название склада',
+            'Склад: Наименование',
+        ]);
+
+        if ($name) {
+            $warehouse = Warehouse::query()
+                ->where('name', $name)
+                ->first();
+
+            if ($warehouse) {
+                return $warehouse;
+            }
+        }
+
+        return $this->mainWarehouse();
+    }
+
+    private function mainWarehouse(): Warehouse
+    {
+        $warehouse = Warehouse::query()
+            ->where('is_active', true)
+            ->where('is_main', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->first();
+
+        if ($warehouse) {
+            return $warehouse;
+        }
+
+        // Совместимость с базой до появления is_main: сначала пробуем
+        // привычный код MAIN / название «Основной склад».
+        $warehouse = Warehouse::query()
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query
+                    ->whereRaw('LOWER(code) = ?', ['main'])
+                    ->orWhere('name', 'Основной склад');
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->first();
+
+        if ($warehouse) {
+            if (! $warehouse->is_main) {
+                $warehouse->forceFill(['is_main' => true])->save();
+            }
+
+            return $warehouse;
+        }
+
+        // Если складов ещё нет, импорт не должен терять остаток.
+        return Warehouse::query()->create([
+            'code' => 'MAIN',
+            'name' => 'Основной склад',
+            'is_active' => true,
+            'is_main' => true,
+            'sort_order' => 0,
+            'synced_at' => now(),
+        ]);
+    }
+
+    private function firstString(array $row, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            $value = $this->nullableString($row[$key] ?? null);
+
+            if ($value !== null) {
+                return $value;
+            }
+        }
+
+        return null;
     }
 
     private function upsertProductLang(Product $product, array $row): void

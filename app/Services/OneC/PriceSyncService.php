@@ -15,25 +15,25 @@ class PriceSyncService
     public function sync(array $items): SyncResult
     {
         $result = new SyncResult();
+
         foreach ($items as $index => $row) {
             $result->processed++;
-            try {
-                $product = Product::query()->where('one_c_id', $row['product_ref'] ?? null)->firstOrFail();
-                $variant = ! empty($row['variant_ref'])
-                    ? ProductVariant::query()->where('one_c_id', $row['variant_ref'])->where('product_id', $product->id)->firstOrFail()
-                    : null;
 
-                $type = null;
-                if (! empty($row['price_type_ref'])) $type = ProductPriceType::query()->where('one_c_id', $row['price_type_ref'])->first();
-                if (! $type && ! empty($row['price_type_code'])) $type = ProductPriceType::query()->where('code', $row['price_type_code'])->first();
-                if (! $type) {
-                    $name = $row['price_type_name'] ?? 'Цена';
-                    $type = ProductPriceType::create([
-                        'code' => $row['price_type_code'] ?? Str::slug($name, '_'),
-                        'name' => $name,
-                        'one_c_id' => $row['price_type_ref'] ?? null,
-                    ]);
-                }
+            try {
+                // ВАЖНО: тип цены синхронизируем ДО поиска товара.
+                // Поэтому справочник цен сохранится даже если товар ещё не загружен.
+                $type = $this->resolvePriceType($row);
+
+                $product = Product::query()
+                    ->where('one_c_id', $row['product_ref'] ?? null)
+                    ->firstOrFail();
+
+                $variant = ! empty($row['variant_ref'])
+                    ? ProductVariant::query()
+                        ->where('one_c_id', $row['variant_ref'])
+                        ->where('product_id', $product->id)
+                        ->firstOrFail()
+                    : null;
 
                 $key = [
                     'product_id' => $product->id,
@@ -41,8 +41,10 @@ class PriceSyncService
                     'product_price_type_id' => $type->id,
                     'min_quantity' => $row['min_quantity'] ?? 1,
                 ];
+
                 $price = ProductPrice::query()->firstOrNew($key);
                 $exists = $price->exists;
+
                 $price->fill([
                     'amount' => $row['amount'],
                     'old_amount' => $row['old_amount'] ?? null,
@@ -53,11 +55,52 @@ class PriceSyncService
                     'valid_until' => $row['valid_until'] ?? null,
                     'synced_at' => now(),
                 ])->save();
+
                 $exists ? $result->updated++ : $result->created++;
             } catch (Throwable $e) {
-                $result->errors[] = ['index' => $index, 'message' => $e->getMessage()];
+                $result->errors[] = [
+                    'index' => $index,
+                    'ref' => $row['ref'] ?? null,
+                    'message' => $e->getMessage(),
+                ];
             }
         }
+
         return $result;
+    }
+
+    private function resolvePriceType(array $row): ProductPriceType
+    {
+        $type = null;
+
+        if (! empty($row['price_type_ref'])) {
+            $type = ProductPriceType::query()
+                ->where('one_c_id', $row['price_type_ref'])
+                ->first();
+        }
+
+        if (! $type && ! empty($row['price_type_code'])) {
+            $type = ProductPriceType::query()
+                ->where('code', $row['price_type_code'])
+                ->first();
+        }
+
+        if (! $type) {
+            $name = trim((string) ($row['price_type_name'] ?? 'Цена'));
+
+            $type = ProductPriceType::query()->create([
+                'code' => $row['price_type_code'] ?? (Str::slug($name, '_') ?: 'price_' . Str::lower(Str::random(8))),
+                'name' => $name,
+                'one_c_id' => $row['price_type_ref'] ?? null,
+            ]);
+        } else {
+            $type->fill([
+                'one_c_id' => $row['price_type_ref'] ?? $type->one_c_id,
+                'code' => $row['price_type_code'] ?? $type->code,
+                'name' => $row['price_type_name'] ?? $type->name,
+            ])->save();
+        }
+
+        return $type;
     }
 }

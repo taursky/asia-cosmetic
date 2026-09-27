@@ -9,6 +9,8 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Api\Account\AccountIdentityController;
+use App\Http\Controllers\Api\Account\CustomerProfileController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;
@@ -59,8 +61,7 @@ Route::middleware('auth:web')
             ->name('email.send');
 
         Route::get('/email/verify/{token}', [AccountController::class, 'verifyEmail'])
-            ->middleware('signed')
-            ->name('email.verify');
+            ->middleware('signed')->name('email.verify');
 
         Route::put('/password', [AccountController::class, 'updatePassword'])
             ->name('password.update');
@@ -96,14 +97,28 @@ Route::middleware('auth:web')->group(function (): void {
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 });
 
-//Route::middleware('auth:web')
-//    ->prefix('api/cart')
-//    ->name('cart.api.')
-//    ->group(function (): void {
-//        Route::get('/', [CartController::class, 'show'])->name('show');
-//        Route::post('/items', [CartController::class, 'add'])->name('items.add');
-//        Route::patch('/items/{item}', [CartController::class, 'update'])->name('items.update');
-//        Route::delete('/items/{item}', [CartController::class, 'destroy'])->name('items.destroy');
-//
-//        Route::post('/checkout', CheckoutController::class)->name('checkout');
-//    });
+Route::middleware('auth:web')
+    ->prefix('account/api')
+    ->name('account.api.')
+    ->group(function (): void {
+        Route::get('/profile', [CustomerProfileController::class, 'show'])
+            ->name('profile');
+
+        Route::put('/personal', [CustomerProfileController::class, 'updatePersonal'])
+            ->name('personal.update');
+
+        Route::put('/profile', [CustomerProfileController::class, 'update'])
+            ->name('profile.update');
+
+        Route::post('/email/send', [AccountIdentityController::class, 'sendEmail'])
+            ->middleware('throttle:5,1')
+            ->name('email.send');
+
+        Route::post('/phone/send', [AccountIdentityController::class, 'sendPhone'])
+            ->middleware('throttle:5,1')
+            ->name('phone.send');
+
+        Route::post('/phone/verify', [AccountIdentityController::class, 'verifyPhone'])
+            ->middleware('throttle:10,1')
+            ->name('phone.verify');
+    });

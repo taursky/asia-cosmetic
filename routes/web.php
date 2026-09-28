@@ -12,7 +12,6 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Api\Account\AccountIdentityController;
 use App\Http\Controllers\Api\Account\AccountDocumentsController;
 use App\Http\Controllers\Api\Account\AccountProfileController;
-use App\Http\Controllers\Api\Account\CustomerProfileController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;

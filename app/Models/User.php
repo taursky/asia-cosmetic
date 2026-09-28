@@ -31,9 +31,15 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'is_active' => 'boolean',
             'password' => 'hashed',
+            'customer_role_locked' => 'boolean',
+            'customer_role_valid_until' => 'datetime',
         ];
     }
 
+    /**
+     * Legacy/multiple roles. Kept for compatibility with old code.
+     * The commercial price level is customerRole() / customer_role_id.
+     */
     public function customerRoles(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -44,6 +50,10 @@ class User extends Authenticatable
 
     public function hasCustomerRole(string $code): bool
     {
+        if ($this->customerRole?->is_active && $this->customerRole?->code === $code) {
+            return true;
+        }
+
         return $this->customerRoles()
             ->where('code', $code)
             ->where('is_active', true)
@@ -52,19 +62,39 @@ class User extends Authenticatable
 
     public function hasAnyCustomerRole(array $codes): bool
     {
+        if ($this->customerRole?->is_active && in_array($this->customerRole?->code, $codes, true)) {
+            return true;
+        }
+
         return $this->customerRoles()
             ->whereIn('code', $codes)
             ->where('is_active', true)
             ->exists();
     }
 
+    /** Current commercial role used for pricing. */
     public function customerRole(): BelongsTo
     {
-        return $this->belongsTo(CustomerRole::class);
+        return $this->belongsTo(CustomerRole::class, 'customer_role_id');
     }
 
-    public function customerProfile(): HasOne { return $this->hasOne(CustomerProfile::class); }
-    public function customerRoleHistory(): HasMany { return $this->hasMany(CustomerRoleHistory::class); }
-    public function customerDocuments(): HasMany { return $this->hasMany(CustomerDocument::class); }
-    public function orders(): HasMany { return $this->hasMany(Order::class); }
+    public function customerProfile(): HasOne
+    {
+        return $this->hasOne(CustomerProfile::class, 'user_id');
+    }
+
+    public function customerRoleHistory(): HasMany
+    {
+        return $this->hasMany(CustomerRoleHistory::class);
+    }
+
+    public function customerDocuments(): HasMany
+    {
+        return $this->hasMany(CustomerDocument::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
 }

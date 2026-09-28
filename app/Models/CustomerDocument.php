@@ -11,8 +11,23 @@ class CustomerDocument extends Model
 
     protected function casts(): array
     {
-        return ['available_from' => 'datetime', 'expires_at' => 'datetime'];
+        return [
+            'available_from' => 'datetime',
+            'expires_at' => 'datetime',
+        ];
     }
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function isAvailable(): bool
+    {
+        if ($this->available_from && $this->available_from->isFuture()) {
+            return false;
+        }
+
+        return ! $this->expires_at || $this->expires_at->isFuture();
+    }
 }

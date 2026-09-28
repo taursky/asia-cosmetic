@@ -10,6 +10,8 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\EmailLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Api\Account\AccountIdentityController;
+use App\Http\Controllers\Api\Account\AccountDocumentsController;
+use App\Http\Controllers\Api\Account\AccountProfileController;
 use App\Http\Controllers\Api\Account\CustomerProfileController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
@@ -95,20 +97,27 @@ Route::middleware('auth:web')->group(function (): void {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+    //Скачать документ
+    Route::get('/account/documents/{document}', [AccountDocumentsController::class, 'download'])
+        ->name('account.documents.download');
 });
 
 Route::middleware('auth:web')
     ->prefix('account/api')
     ->name('account.api.')
     ->group(function (): void {
-        Route::get('/profile', [CustomerProfileController::class, 'show'])
+
+        Route::get('/profile', [AccountProfileController::class, 'show'])
             ->name('profile');
 
-        Route::put('/personal', [CustomerProfileController::class, 'updatePersonal'])
+        Route::put('/personal', [AccountProfileController::class, 'updatePersonal'])
             ->name('personal.update');
 
-        Route::put('/profile', [CustomerProfileController::class, 'update'])
+        Route::put('/profile', [AccountProfileController::class, 'update'])
             ->name('profile.update');
+
+        Route::get('/documents', [AccountDocumentsController::class, 'index'])
+            ->name('documents');
 
         Route::post('/email/send', [AccountIdentityController::class, 'sendEmail'])
             ->middleware('throttle:5,1')

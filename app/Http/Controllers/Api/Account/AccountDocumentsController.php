@@ -3,32 +3,53 @@
 namespace App\Http\Controllers\Api\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\InvoiceRequest;
-use App\Models\Order;
+use App\Models\CustomerDocument;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AccountDocumentsController extends Controller
 {
-    public function documents(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        return response()->json([
-            'documents' => $request->user()->customerDocuments()->latest()->get(),
-        ]);
+        $documents = $request->user()
+            ->customerDocuments()
+            ->where(function ($query): void {
+                $query->whereNull('available_from')->orWhere('available_from', '<=', now());
+            })
+            ->where(function ($query): void {
+                $query->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->latest('id')
+            ->get()
+            ->map(fn (CustomerDocument $document): array => [
+                'id' => $document->id,
+                'type' => $document->type,
+                'title' => $document->title,
+                'external_id' => $document->external_id,
+                'available_from' => $document->available_from,
+                'expires_at' => $document->expires_at,
+                'download_url' => route('account.documents.download', $document),
+            ]);
+
+        return response()->json(['documents' => $documents]);
     }
 
-    public function requestInvoice(Request $request, Order $order): JsonResponse
+    public function download(Request $request, CustomerDocument $document): StreamedResponse
     {
-        abort_unless((int) $order->user_id === (int) $request->user()->id, 404);
+        abort_unless((int) $document->user_id === (int) $request->user()->id, 404);
+        abort_unless($document->isAvailable(), 404);
 
-        $profile = $request->user()->customerProfile;
-        abort_unless($profile && $profile->verification_status === 'verified', 422, 'Платёжные реквизиты ещё не подтверждены.');
+        $disk = config("filesystems.disks.{$document->disk}")
+            ? $document->disk
+            : 'local';
 
-        $invoice = InvoiceRequest::query()->firstOrCreate([
-            'user_id' => $request->user()->id,
-            'order_id' => $order->id,
-        ]);
+        abort_unless(Storage::disk($disk)->exists($document->path), 404);
 
-        return response()->json(['invoice_request' => $invoice]);
+        return Storage::disk($disk)->download(
+            $document->path,
+            $document->title ?: basename($document->path),
+        );
     }
 }

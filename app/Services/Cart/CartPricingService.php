@@ -15,16 +15,9 @@ class CartPricingService
 
     public function calculate(Cart $cart): array
     {
-        $cart->load([
-            'user.customerRole.priceType',
-            'items.product.lang',
-            'items.product.prices.priceType',
-            'items.variant.lang',
-            'items.variant.images',
-            'items.variant.prices.priceType',
-            'items.variant.optionValues.option.lang',
-            'items.variant.optionValues.lang',
-        ]);
+        $this->loadCart($cart);
+        $this->removeInvalidItems($cart);
+        $this->loadCart($cart, true);
 
         if ($cart->items->isEmpty()) {
             return [
@@ -112,6 +105,45 @@ class CartPricingService
             'total' => $total,
             'currency' => $cart->currency ?: 'RUB',
         ];
+    }
+
+    private function loadCart(Cart $cart, bool $refresh = false): void
+    {
+        if ($refresh) {
+            $cart->unsetRelation('items');
+        }
+
+        $cart->load([
+            'user.customerRole.priceType',
+            'items.product.lang',
+            'items.product.prices.priceType',
+            'items.variant.lang',
+            'items.variant.images',
+            'items.variant.prices.priceType',
+            'items.variant.optionValues.option.lang',
+            'items.variant.optionValues.lang',
+        ]);
+    }
+
+    private function removeInvalidItems(Cart $cart): void
+    {
+        $invalidIds = $cart->items
+            ->filter(function ($item): bool {
+                if (! $item->product || ! $item->variant) {
+                    return true;
+                }
+
+                if (! $item->product->is_active || ! $item->variant->is_active) {
+                    return true;
+                }
+
+                return (int) $item->variant->product_id !== (int) $item->product_id;
+            })
+            ->pluck('id');
+
+        if ($invalidIds->isNotEmpty()) {
+            $cart->items()->whereKey($invalidIds)->delete();
+        }
     }
 
     private function rolePayload(CustomerRole $role): array

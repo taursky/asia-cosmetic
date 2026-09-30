@@ -142,11 +142,8 @@ class CustomerPriceResolver
         return $this->quotePayload($price, $type, false, $variant->id);
     }
 
-    public function priceForVariant(
-        ProductVariant $variant,
-        CustomerRole $role,
-        float $quantity = 1,
-    ): ?ProductPrice {
+    public function priceForVariant(ProductVariant $variant, CustomerRole $role, float $quantity = 1,): ?ProductPrice
+    {
         $priceTypeId = $role->product_price_type_id;
 
         if (! $priceTypeId) {
@@ -201,12 +198,25 @@ class CustomerPriceResolver
     public function calculateTotal(Collection $items, CustomerRole $role): float
     {
         return round($items->sum(function (array $line) use ($role): float {
-            $quantity = (float) $line['quantity'];
-            $price = $this->priceForVariant($line['variant'], $role, $quantity);
+            $variant = $line['variant'] ?? null;
+
+            if (! $variant instanceof ProductVariant) {
+                throw ValidationException::withMessages([
+                    'cart' => 'В корзине обнаружена устаревшая позиция товара. Обновите корзину и добавьте товар заново.',
+                ]);
+            }
+
+            $quantity = (float) ($line['quantity'] ?? 0);
+
+            if ($quantity <= 0) {
+                return 0.0;
+            }
+
+            $price = $this->priceForVariant($variant, $role, $quantity);
 
             if (! $price) {
                 throw ValidationException::withMessages([
-                    'pricing' => "Для SKU {$line['variant']->sku} не настроена цена для роли «{$role->name}».",
+                    'pricing' => "Для SKU {$variant->sku} не настроена цена для роли «{$role->name}».",
                 ]);
             }
 

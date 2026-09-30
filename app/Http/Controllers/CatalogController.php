@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Services\Pricing\CatalogPricePresenter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,10 @@ use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
+    public function __construct(
+        private readonly CatalogPricePresenter $prices,
+    ) {}
+
     public function index(Request $request): View
     {
         $locale = app()->getLocale();
@@ -35,6 +40,8 @@ class CatalogController extends Controller
             ->latest('products.created_at')
             ->paginate(24)
             ->withQueryString();
+
+        $this->prices->decoratePaginator($products, $request->user());
 
         return view('catalog.index', compact(
             'categories',
@@ -76,13 +83,15 @@ class CatalogController extends Controller
             ->paginate(24)
             ->withQueryString();
 
+        $this->prices->decoratePaginator($products, $request->user());
+
         return view('catalog.category', compact(
             'category',
             'products',
         ));
     }
 
-    public function product(string $productSlug): View
+    public function product(Request $request, string $productSlug): View
     {
         $locale = app()->getLocale();
 
@@ -128,7 +137,10 @@ class CatalogController extends Controller
             ])
             ->firstOrFail();
 
+        $this->prices->decorateProduct($product, $request->user());
+
         $relatedProducts = $this->relatedProducts($product, $locale);
+        $this->prices->decorateCollection($relatedProducts, $request->user());
 
         return view('catalog.product', compact(
             'product',

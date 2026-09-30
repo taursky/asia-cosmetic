@@ -2,6 +2,7 @@
 
 namespace App\Services\Cart;
 
+use App\Models\Cart;
 use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -14,9 +15,9 @@ class CheckoutService
         private readonly CartService $carts,
     ) {}
 
-    public function checkout(\App\Models\Cart $cart, array $data): Order
+    public function checkout(Cart $cart, array $data): Order
     {
-        $user = $cart->user()->with(['customerRole', 'customerProfile'])->firstOrFail();
+        $user = $cart->user()->with(['customerRole.priceType', 'customerProfile'])->firstOrFail();
         $result = $this->pricing->calculate($cart);
 
         if (empty($result['items'])) {
@@ -46,7 +47,7 @@ class CheckoutService
                 'discount_amount' => $result['discount_amount'],
                 'total' => $result['total'],
                 'customer_role_id' => $result['order_role']['id'],
-                'product_price_type_id' => $user->customerRole?->product_price_type_id,
+                'product_price_type_id' => $result['order_role']['price_type_id'],
                 'customer_data' => [
                     'name' => $user->name,
                     'email' => $user->email,
@@ -54,11 +55,11 @@ class CheckoutService
                     'profile' => $user->customerProfile?->toArray(),
                 ],
                 'delivery_data' => [
-                    'method' => $data['delivery_method'],
+                    'method' => $data['delivery_method'] ?? 'pickup',
                     'address' => $data['delivery_address'] ?? null,
                 ],
                 'payment_data' => [
-                    'method' => $data['payment_method'],
+                    'method' => $data['payment_method'] ?? 'invoice',
                 ],
                 'comment' => $data['comment'] ?? null,
                 'pricing_meta' => [
@@ -82,6 +83,9 @@ class CheckoutService
                     'meta' => [
                         'product_price_id' => $line['price_id'],
                         'customer_role_id' => $result['order_role']['id'],
+                        'product_price_type_id' => $line['price_type_id'],
+                        'price_type_code' => $line['price_type_code'],
+                        'price_type_name' => $line['price_type_name'],
                         'options' => $line['options'],
                     ],
                 ]);

@@ -17,11 +17,7 @@ async function change(item, delta) {
 <template>
     <Teleport to="body">
         <div v-if="cartStore.open" class="fixed inset-0 z-[100]">
-            <button
-                class="absolute inset-0 bg-black/35 backdrop-blur-[1px]"
-                aria-label="Закрыть корзину"
-                @click="cartStore.open = false"
-            />
+            <button class="absolute inset-0 bg-black/35 backdrop-blur-[1px]" @click="cartStore.open = false" />
 
             <aside class="absolute right-0 top-0 flex h-full w-[92vw] max-w-[520px] flex-col bg-white shadow-2xl">
                 <header class="flex items-center justify-between border-b border-zinc-100 px-5 py-4">
@@ -33,13 +29,8 @@ async function change(item, delta) {
                 </header>
 
                 <div class="flex-1 overflow-y-auto px-5 py-4">
-                    <div v-if="cartStore.error" class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">
-                        {{ cartStore.error }}
-                    </div>
-
-                    <div v-if="!cartStore.items.length" class="py-16 text-center text-sm text-zinc-400">
-                        Корзина пока пуста.
-                    </div>
+                    <div v-if="cartStore.error" class="mb-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ cartStore.error }}</div>
+                    <div v-if="!cartStore.items.length" class="py-16 text-center text-sm text-zinc-400">Корзина пока пуста.</div>
 
                     <div v-else class="divide-y divide-zinc-100">
                         <article v-for="item in cartStore.items" :key="item.id" class="py-5">
@@ -49,10 +40,7 @@ async function change(item, delta) {
                                 </div>
 
                                 <div class="min-w-0 flex-1">
-                                    <div class="line-clamp-2 text-sm font-medium text-zinc-950">
-                                        {{ item.product_name || item.variant_name || item.sku }}
-                                    </div>
-
+                                    <div class="line-clamp-2 text-sm font-medium text-zinc-950">{{ item.product_name || item.variant_name || item.sku }}</div>
                                     <div class="mt-1 text-xs text-zinc-400">{{ item.sku }}</div>
 
                                     <div v-if="item.options?.length" class="mt-2 text-xs text-zinc-500">
@@ -67,14 +55,14 @@ async function change(item, delta) {
                                             <span class="min-w-10 text-center text-sm">{{ item.quantity }}</span>
                                             <button type="button" class="px-3 py-2" @click="change(item, 1)">+</button>
                                         </div>
-
-                                        <button type="button" class="text-xs font-medium text-red-600 hover:underline" @click="removeCartItem(item.id)">
-                                            Удалить
-                                        </button>
+                                        <button type="button" class="text-xs font-medium text-red-600 hover:underline" @click="removeCartItem(item.id)">Удалить</button>
                                     </div>
 
                                     <div class="mt-3 flex items-baseline justify-between gap-3">
-                                        <span class="text-xs text-zinc-400">{{ money(item.unit_price) }} / шт.</span>
+                                        <div>
+                                            <div class="text-xs text-zinc-500">{{ money(item.unit_price) }} / шт.</div>
+                                            <div class="mt-0.5 text-[11px] font-medium text-zinc-400">{{ item.price_type_name }}</div>
+                                        </div>
                                         <span class="font-semibold text-zinc-950">{{ money(item.line_total) }}</span>
                                     </div>
                                 </div>
@@ -84,26 +72,24 @@ async function change(item, delta) {
                 </div>
 
                 <footer v-if="cartStore.items.length" class="border-t border-zinc-100 p-5">
-                    <div
-                        v-if="cartStore.orderRole && cartStore.baseRole && cartStore.orderRole.id !== cartStore.baseRole.id"
-                        class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800"
-                    >
-                        Для этого заказа применяется уровень цены <strong>{{ cartStore.orderRole.name }}</strong>.
+                    <div class="mb-3 rounded-xl bg-blue-50 p-3 text-sm text-[#071d5d]" v-if="cartStore.orderRole">
+                        Уровень заказа: <strong>{{ cartStore.orderRole.name }}</strong>
+                        <span v-if="cartStore.orderRole.price_type_name"> · {{ cartStore.orderRole.price_type_name }}</span>
+                    </div>
+
+                    <div v-if="cartStore.orderRole && cartStore.baseRole && cartStore.orderRole.id !== cartStore.baseRole.id" class="mb-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">
+                        Сумма корзины дала более выгодный уровень цены для этого заказа.
                     </div>
 
                     <div v-if="cartStore.discountAmount > 0" class="mb-2 flex justify-between text-sm text-zinc-500">
-                        <span>Экономия</span>
-                        <span>− {{ money(cartStore.discountAmount) }}</span>
+                        <span>Экономия</span><span>− {{ money(cartStore.discountAmount) }}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-lg font-semibold text-zinc-950">
-                        <span>Итого</span>
-                        <span>{{ money(cartStore.total) }}</span>
+                        <span>Итого</span><span>{{ money(cartStore.total) }}</span>
                     </div>
 
-                    <a href="/checkout" class="mt-4 flex w-full items-center justify-center rounded-xl bg-[#071d5d] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0d2e84]">
-                        Оформить заказ
-                    </a>
+                    <a href="/checkout" class="mt-4 flex w-full items-center justify-center rounded-xl bg-[#071d5d] px-5 py-3 text-sm font-semibold text-white hover:bg-[#0d2e84]">Оформить заказ</a>
                 </footer>
             </aside>
         </div>

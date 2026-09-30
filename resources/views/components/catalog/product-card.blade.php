@@ -1,74 +1,74 @@
 @props(['product'])
 
 @php
+    use Illuminate\Support\Facades\Storage;
+
+    if (! array_key_exists('display_price', $product->getAttributes())) {
+        app(\App\Services\Pricing\CatalogPricePresenter::class)
+            ->decorateProduct($product, auth()->user());
+    }
+
     $variant = $product->variants->first();
-    $cartVariant = $product->variants->first();
-    $prices = $variant?->prices->isNotEmpty() ? $variant->prices : $product->prices;
-    $retail = $prices->first(fn ($price) => $price->priceType?->code === 'retail') ?? $prices->first();
-    $image = $product->images->first() ?? $variant?->images->first();
-    $imageUrl = $image?->name ? Storage::disk('public')->url($image->name) : null;
-    $name = $product->lang?->name ?? 'Товар';
-    $slug = $product->lang?->slug;
-    $url = $slug ? route('catalog.product', $slug) : '#';
-    $inStock = $product->variants->isEmpty() || $product->variants->sum('stock') > 0;
-    $discount = $retail?->old_amount && $retail->amount && $retail->old_amount > $retail->amount
-        ? (int) round((1 - ($retail->amount / $retail->old_amount)) * 100)
-        : null;
+    $image = $product->images->first() ?: $variant?->images?->first();
+    $price = $product->display_price;
+    $oldPrice = $product->display_old_price;
 @endphp
 
-<article class="group flex h-full min-w-0 flex-col">
-    <a href="{{ $url }}" class="relative block aspect-square overflow-hidden rounded-2xl bg-white ring-1 ring-black/5">
-        @if ($imageUrl)
-            <img
-                src="{{ $imageUrl }}"
-                alt="{{ $name }}"
-                loading="lazy"
-                class="h-full w-full object-contain p-4 transition duration-500 group-hover:scale-[1.035]"
-            >
-        @else
-            <div class="flex h-full items-center justify-center bg-zinc-50 text-sm text-zinc-400">Нет изображения</div>
-        @endif
+<article class="group flex h-full flex-col">
+    <a href="{{ route('catalog.product', $product->lang?->slug) }}" class="block">
+        <div class="overflow-hidden rounded-2xl bg-slate-50">
+            @if($image)
+                <img
+                    src="{{ Storage::disk('public')->url($image->name) }}"
+                    alt="{{ $product->lang?->name }}"
+                    class="aspect-square w-full object-contain p-4 transition duration-300 group-hover:scale-[1.02]"
+                    loading="lazy"
+                >
+            @else
+                <div class="flex aspect-square items-center justify-center text-sm text-slate-400">
+                    Нет изображения
+                </div>
+            @endif
+        </div>
 
-        @if ($discount)
-            <span class="absolute left-3 top-3 rounded-full bg-rose-600 px-2.5 py-1 text-xs font-semibold text-white">-{{ $discount }}%</span>
-        @endif
+        <div class="mt-4">
+            <div class="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-slate-950">
+                {{ $product->lang?->name }}
+            </div>
 
-        <span @class([
-            'absolute bottom-3 left-3 rounded-full px-2.5 py-1 text-[11px] font-medium',
-            'bg-emerald-50 text-emerald-700' => $inStock,
-            'bg-zinc-100 text-zinc-500' => ! $inStock,
-        ])>
-            {{ $inStock ? 'В наличии' : 'Нет в наличии' }}
-        </span>
+            @if($variant?->sku ?? $product->sku)
+                <div class="mt-1 text-xs text-slate-400">
+                    {{ $variant?->sku ?? $product->sku }}
+                </div>
+            @endif
+
+            <div class="mt-3 min-h-12">
+                @if($price !== null)
+                    <div class="flex flex-wrap items-baseline gap-2">
+                        <span class="text-lg font-semibold text-slate-950">
+                            @if($product->display_price_from)от @endif{{ number_format((float) $price, 0, ',', ' ') }} ₽
+                        </span>
+
+                        @if($oldPrice && $oldPrice > $price)
+                            <span class="text-sm text-slate-400 line-through">
+                                {{ number_format((float) $oldPrice, 0, ',', ' ') }} ₽
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="mt-1 text-[11px] font-medium text-slate-400">
+                        {{ auth()->check() ? 'Ваша цена' : 'Цена' }} · {{ $product->display_price_type_name }}
+                    </div>
+                @else
+                    <div class="text-sm text-slate-400">Цена по запросу</div>
+                @endif
+            </div>
+        </div>
     </a>
 
-    <div class="flex flex-1 flex-col pt-4">
-        <a href="{{ $url }}" class="line-clamp-2 min-h-12 text-sm font-medium leading-6 text-zinc-900 transition hover:text-blue-900">
-            {{ $name }}
-        </a>
-
-        <div class="mt-auto flex items-end justify-between gap-3 pt-4">
-            <div>
-                @if ($retail?->old_amount && $retail->old_amount > $retail->amount)
-                    <div class="text-xs text-zinc-400 line-through">{{ number_format((float) $retail->old_amount, 0, ',', ' ') }} ₽</div>
-                @endif
-                <div class="text-lg font-semibold tracking-tight text-zinc-950">
-                    {{ $retail?->amount !== null ? number_format((float) $retail->amount, 0, ',', ' ') . ' ₽' : 'Цена по запросу' }}
-                </div>
-            </div>
-
-            <div class="mt-4">
-                <x-catalog.add-to-cart :variant="$cartVariant" />
-            </div>
-
-            <a href="{{ $url }}"
-                aria-label="Открыть {{ $name }}"
-                class="grid size-10 shrink-0 place-items-center rounded-full bg-[#071d5d] text-white transition hover:bg-[#0d2e84]"
-            >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-5" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 12h14m-6-6 6 6-6 6"/>
-                </svg>
-            </a>
+    @if($variant)
+        <div class="mt-auto pt-3">
+            <x-catalog.add-to-cart :variant="$variant" />
         </div>
-    </div>
+    @endif
 </article>

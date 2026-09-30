@@ -9,16 +9,9 @@
         ? $product->images
         : ($variant?->images ?? collect());
 
-    $prices = $variant?->prices?->isNotEmpty()
-        ? $variant->prices
-        : $product->prices;
-
-    $retail = $prices?->first(
-        fn ($price) => $price->priceType?->code === 'retail'
-    );
-
-    $currentPrice = $retail?->amount;
-    $oldPrice = $retail?->old_amount;
+    $currentPrice = $variant?->display_price ?? $product->display_price;
+    $oldPrice = $variant?->display_old_price ?? $product->display_old_price;
+    $priceTypeName = $variant?->display_price_type_name ?? $product->display_price_type_name;
 @endphp
 
 @section('title', ($product->lang?->seo_title ?: $product->lang?->name) . ' — Asia Cosmetic')
@@ -108,6 +101,12 @@
                     @endif
                 </div>
 
+                @if($currentPrice !== null && $priceTypeName)
+                    <div class="mt-1 text-xs font-medium text-slate-400">
+                        {{ auth()->check() ? 'Ваша цена' : 'Цена' }} · {{ $priceTypeName }}
+                    </div>
+                @endif
+
                 @if($variant)
                     <div class="mt-3 text-sm font-medium {{ $variant->stock > 0 ? 'text-emerald-700' : 'text-amber-700' }}">
                         {{ $variant->stock > 0 ? 'В наличии' : 'Под заказ' }}
@@ -123,6 +122,12 @@
                                     <div class="font-medium text-slate-950">
                                         {{ $item->lang?->name ?: $item->sku }}
                                     </div>
+
+                                    @if($item->display_price !== null)
+                                        <div class="mt-1 text-sm font-semibold text-[#071d5d]">
+                                            {{ number_format((float) $item->display_price, 0, ',', ' ') }} ₽
+                                        </div>
+                                    @endif
 
                                     @if($item->optionValues->isNotEmpty())
                                         <div class="mt-1 text-xs text-slate-500">
@@ -144,12 +149,11 @@
                     </div>
                 @endif
 
-                <button
-                    type="button"
-                    class="mt-8 w-full rounded-full bg-[#071d5d] px-6 py-4 text-sm font-semibold text-white transition hover:bg-[#0b2a82] sm:w-auto sm:min-w-64"
-                >
-                    Добавить в корзину
-                </button>
+                @if($variant)
+                    <div class="mt-8 sm:max-w-64">
+                        <x-catalog.add-to-cart :variant="$variant" />
+                    </div>
+                @endif
             </section>
         </div>
 

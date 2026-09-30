@@ -18,8 +18,10 @@ class CartPricingService
         $cart->load([
             'user.customerRole.priceType',
             'items.product.lang',
+            'items.product.prices.priceType',
             'items.variant.lang',
             'items.variant.images',
+            'items.variant.prices.priceType',
             'items.variant.optionValues.option.lang',
             'items.variant.optionValues.lang',
         ]);
@@ -33,7 +35,7 @@ class CartPricingService
                 'subtotal' => 0,
                 'discount_amount' => 0,
                 'total' => 0,
-                'currency' => $cart->currency,
+                'currency' => $cart->currency ?: 'RUB',
             ];
         }
 
@@ -44,24 +46,29 @@ class CartPricingService
 
         $resolved = $this->prices->resolveOrderRole($cart->user, $pricingItems);
 
+        /** @var CustomerRole $baseRole */
+        $baseRole = $resolved['base_role'];
         /** @var CustomerRole $orderRole */
         $orderRole = $resolved['order_role'];
 
+        $baseRole->loadMissing('priceType');
+        $orderRole->loadMissing('priceType');
+
         $lines = $cart->items->map(function ($item) use ($orderRole): array {
             $quantity = (float) $item->quantity;
-            $price = $this->prices->priceForVariant($item->variant, $orderRole, $quantity);
-
-            if (! $price) {
-                throw ValidationException::withMessages([
-                    'cart' => "Для SKU {$item->variant->sku} не настроена цена для уровня «{$orderRole->name}».",
-                ]);
-            }
-
             $available = (float) $item->variant->stock;
 
             if ($quantity > $available) {
                 throw ValidationException::withMessages([
                     'cart' => "Недостаточный остаток SKU {$item->variant->sku}. Доступно: {$available}.",
+                ]);
+            }
+
+            $price = $this->prices->priceForVariant($item->variant, $orderRole, $quantity);
+
+            if (! $price) {
+                throw ValidationException::withMessages([
+                    'cart' => "Для SKU {$item->variant->sku} не настроена цена «{$orderRole->priceType?->name}».",
                 ]);
             }
 
@@ -78,36 +85,44 @@ class CartPricingService
                 'quantity' => $quantity,
                 'stock' => $available,
                 'unit_price' => $amount,
+                'old_price' => $price->old_amount !== null ? (float) $price->old_amount : null,
                 'line_total' => $lineTotal,
                 'price_id' => $price->id,
+                'price_type_id' => $price->product_price_type_id,
+                'price_type_code' => $price->priceType?->code,
+                'price_type_name' => $price->priceType?->name,
                 'image' => $item->variant?->images?->first()?->name,
                 'options' => $item->variant?->optionValues?->map(fn ($value): array => [
-                        'name' => $value->option?->lang?->name ?? $value->option?->code,
-                        'value' => $value->lang?->value ?? $value->code,
-                    ])->values()->all() ?? [],
+                    'name' => $value->option?->lang?->name ?? $value->option?->code,
+                    'value' => $value->lang?->value ?? $value->code,
+                ])->values()->all() ?? [],
             ];
         })->values();
 
         $subtotal = round((float) $resolved['qualification_total'], 2);
-        $total = round($lines->sum('line_total'), 2);
+        $total = round((float) $lines->sum('line_total'), 2);
 
         return [
             'items' => $lines->all(),
-            'base_role' => [
-                'id' => $resolved['base_role']->id,
-                'name' => $resolved['base_role']->name,
-                'level' => $resolved['base_role']->level,
-            ],
-            'order_role' => [
-                'id' => $orderRole->id,
-                'name' => $orderRole->name,
-                'level' => $orderRole->level,
-            ],
+            'base_role' => $this->rolePayload($baseRole),
+            'order_role' => $this->rolePayload($orderRole),
             'qualification_total' => $subtotal,
             'subtotal' => $subtotal,
             'discount_amount' => max(0, round($subtotal - $total, 2)),
             'total' => $total,
-            'currency' => $cart->currency,
+            'currency' => $cart->currency ?: 'RUB',
+        ];
+    }
+
+    private function rolePayload(CustomerRole $role): array
+    {
+        return [
+            'id' => $role->id,
+            'name' => $role->name,
+            'level' => (int) $role->level,
+            'price_type_id' => $role->product_price_type_id,
+            'price_type_code' => $role->priceType?->code,
+            'price_type_name' => $role->priceType?->name,
         ];
     }
 }

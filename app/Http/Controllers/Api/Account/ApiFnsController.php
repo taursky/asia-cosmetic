@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Account;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Services\Counterparties\CounterpartyDirectoryService;
+use App\Services\Counterparties\DaDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -40,6 +41,18 @@ class ApiFnsController extends Controller
             'profile' => $result['profile'],
             'source' => $result['source'],
             'fetched_at' => $result['fetched_at'],
+        ]);
+    }
+
+
+    public function bankByBik(Request $request, DaDataService $dadata): JsonResponse
+    {
+        $data = $request->validate([
+            'bik' => ['required', 'regex:/^\\d{9}$/'],
+        ]);
+
+        return response()->json([
+            'bank' => $dadata->findBankByBik($data['bik']),
         ]);
     }
 

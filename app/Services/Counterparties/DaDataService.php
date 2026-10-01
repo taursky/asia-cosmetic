@@ -4,6 +4,7 @@ namespace App\Services\Counterparties;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -25,6 +26,47 @@ class DaDataService
             'count' => 10,
             'branch_type' => 'MAIN',
         ]);
+    }
+
+    public function findBankByBik(string $bik): array
+    {
+        $bik = preg_replace('/\\D+/', '', $bik) ?: '';
+
+        if (! preg_match('/^\\d{9}$/', $bik)) {
+            throw new RuntimeException('БИК должен состоять из 9 цифр.');
+        }
+
+        return Cache::remember(
+            'dadata:bank:bik:' . $bik,
+            now()->addDay(),
+            function () use ($bik): array {
+                $payload = $this->post('findById/bank', [
+                    'query' => $bik,
+                    'count' => 1,
+                ]);
+
+                $item = $payload['suggestions'][0] ?? null;
+                $data = is_array($item) ? ($item['data'] ?? null) : null;
+
+                if (! is_array($item) || ! is_array($data)) {
+                    throw new RuntimeException('Банк с таким БИК не найден.');
+                }
+
+                return [
+                    'name' => $data['name']['payment']
+                        ?? $data['name']['short']
+                        ?? $item['value']
+                        ?? null,
+                    'bic' => $data['bic'] ?? $bik,
+                    'correspondent_account' => $data['correspondent_account'] ?? null,
+                    'payment_city' => $data['payment_city'] ?? null,
+                    'address' => $data['address']['unrestricted_value']
+                        ?? $data['address']['value']
+                        ?? null,
+                    'status' => $data['state']['status'] ?? null,
+                ];
+            },
+        );
     }
 
     private function post(string $method, array $payload): array

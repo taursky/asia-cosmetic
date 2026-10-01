@@ -109,24 +109,18 @@ Route::middleware('auth:web')
 
         Route::get('/profile', [AccountProfileController::class, 'show'])
             ->name('profile');
-
         Route::put('/personal', [AccountProfileController::class, 'updatePersonal'])
             ->name('personal.update');
-
         Route::put('/profile', [AccountProfileController::class, 'update'])
             ->name('profile.update');
-
         Route::get('/documents', [AccountDocumentsController::class, 'index'])
             ->name('documents');
-
         Route::post('/email/send', [AccountIdentityController::class, 'sendEmail'])
             ->middleware('throttle:5,1')
             ->name('email.send');
-
         Route::post('/phone/send', [AccountIdentityController::class, 'sendPhone'])
             ->middleware('throttle:5,1')
             ->name('phone.send');
-
         Route::post('/phone/verify', [AccountIdentityController::class, 'verifyPhone'])
             ->middleware('throttle:10,1')
             ->name('phone.verify');
@@ -140,4 +134,7 @@ Route::middleware('auth:web')
         Route::post('/fns/verify', [ApiFnsController::class, 'verify'])
             ->middleware('throttle:10,1')
             ->name('fns.verify');
+        Route::get('/bank/by-bik', [ApiFnsController::class, 'bankByBik'])
+            ->middleware('throttle:30,1')
+            ->name('bank.by-bik');
     });

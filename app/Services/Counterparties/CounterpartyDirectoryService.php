@@ -83,7 +83,7 @@ class CounterpartyDirectoryService
         $digits = preg_replace('/\D+/', '', $query) ?: $query;
 
         $local = $this->findExact($digits);
-        if ($local && ! $forceRemote && $this->isFresh($local)) {
+        if ($local && ! $forceRemote && $this->isFresh($local) && $this->isDetailed($local)) {
             $this->logQuery($query, 'lookup', 'mongodb', true, 1, $started, $userId);
             return $this->resultFromDocument($local);
         }
@@ -193,6 +193,11 @@ class CounterpartyDirectoryService
         return $item->fetched_at && $item->fetched_at->gte(now()->subDays((int) config('counterparties.fresh_days', 30)));
     }
 
+    private function isDetailed(MongoCounterparty $item): bool
+    {
+        return (bool) data_get($item->provider_meta, 'detailed', false);
+    }
+
     private function storeDadata(array $item, bool $detailed): ?MongoCounterparty
     {
         $data = $item['data'] ?? null;
@@ -205,23 +210,34 @@ class CounterpartyDirectoryService
         $identityKey = $inn . ':' . ($kpp ?: 'main');
 
         $document = MongoCounterparty::query()->firstOrNew(['identity_key' => $identityKey]);
-        $document->fill([
+        $alreadyDetailed = $document->exists && $this->isDetailed($document);
+
+        $summary = [
             'identity_key' => $identityKey,
-            'hid' => $data['hid'] ?? null,
-            'type' => $data['type'] ?? null,
+            'hid' => $data['hid'] ?? $document->hid,
+            'type' => $data['type'] ?? $document->type,
             'inn' => $inn,
             'kpp' => $kpp,
             'ogrn' => $ogrn,
-            'name' => $profile['company_name'] ?? ($item['value'] ?? null),
-            'full_name' => $profile['full_company_name'] ?? ($item['unrestricted_value'] ?? null),
-            'name_normalized' => $this->normalize($profile['company_name'] ?? ($item['value'] ?? '')),
+            'name' => $profile['company_name'] ?? ($item['value'] ?? $document->name),
+            'full_name' => $profile['full_company_name'] ?? ($item['unrestricted_value'] ?? $document->full_name),
+            'name_normalized' => $this->normalize($profile['company_name'] ?? ($item['value'] ?? $document->name ?? '')),
             'search_tokens' => $this->buildSearchTokens($item, $profile),
-            'status' => $data['state']['status'] ?? null,
+            'status' => $data['state']['status'] ?? $document->status,
+            'source' => 'dadata',
+        ];
+
+        // Обычная подсказка не должна затирать уже сохранённую подробную карточку.
+        if (! $detailed && $alreadyDetailed) {
+            $document->fill($summary)->save();
+            return $document;
+        }
+
+        $document->fill($summary + [
             'address' => $profile['legal_address'] ?? null,
             'director_name' => $profile['director_name'] ?? null,
             'director_position' => $profile['director_position'] ?? null,
             'profile' => $profile,
-            'source' => 'dadata',
             'raw' => $item,
             'provider_meta' => ['detailed' => $detailed],
             'fetched_at' => now(),
@@ -301,7 +317,7 @@ class CounterpartyDirectoryService
                 'kpp' => null,
                 'ogrn' => null,
                 'ogrnip' => $data['ogrn'] ?? null,
-                'legal_address' => $data['address']['unrestricted_value'] ?? $data['address']['value'] ?? null,
+                'legal_address' => $this->dadataAddress($data),
                 'director_name' => $fioText ?: null,
                 'director_position' => 'Индивидуальный предприниматель',
                 'fns_status' => $data['state']['status'] ?? null,
@@ -316,11 +332,36 @@ class CounterpartyDirectoryService
             'kpp' => $data['kpp'] ?? null,
             'ogrn' => $data['ogrn'] ?? null,
             'ogrnip' => null,
-            'legal_address' => $data['address']['unrestricted_value'] ?? $data['address']['value'] ?? null,
+            'legal_address' => $this->dadataAddress($data),
             'director_name' => $data['management']['name'] ?? null,
             'director_position' => $data['management']['post'] ?? null,
             'fns_status' => $data['state']['status'] ?? null,
         ];
+    }
+
+    private function dadataAddress(array $data): ?string
+    {
+        $address = $data['address'] ?? null;
+
+        if (is_string($address)) {
+            return trim($address) ?: null;
+        }
+
+        if (! is_array($address)) {
+            return null;
+        }
+
+        foreach ([
+            $address['unrestricted_value'] ?? null,
+            $address['value'] ?? null,
+            $address['data']['source'] ?? null,
+        ] as $value) {
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        return null;
     }
 
     private function resultFromDocument(MongoCounterparty $document): array

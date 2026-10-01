@@ -13,6 +13,10 @@ const fnsMessage = ref('')
 const fnsMismatches = ref([])
 const fnsCheckedAt = ref(null)
 
+const bankLoading = ref(false)
+const bankMessage = ref('')
+let bankTimer = null
+
 let suggestTimer = null
 
 const form = reactive({
@@ -190,6 +194,47 @@ function applyOfficialMismatch(item) {
     if (item?.field && item.field in form) form[item.field] = item.official ?? ''
 }
 
+
+function lookupBankByBik() {
+    clearTimeout(bankTimer)
+    bankMessage.value = ''
+
+    const bik = String(form.bank_bik || '').replace(/\D+/g, '')
+    form.bank_bik = bik.slice(0, 9)
+
+    if (bik.length !== 9) return
+
+    bankTimer = setTimeout(async () => {
+        bankLoading.value = true
+
+        try {
+            const response = await fetch(`/account/api/bank/by-bik?bik=${encodeURIComponent(bik)}`, {
+                headers: { Accept: 'application/json' },
+                credentials: 'same-origin',
+            })
+
+            const payload = await response.json().catch(() => ({}))
+
+            if (!response.ok) {
+                throw new Error(payload.message || payload.errors?.bik?.[0] || 'Не удалось найти банк по БИК.')
+            }
+
+            const bank = payload.bank || {}
+            form.bank_name = bank.name || form.bank_name
+            form.bank_corr_account = bank.correspondent_account || form.bank_corr_account
+            form.bank_bik = bank.bic || bik
+
+            bankMessage.value = bank.name
+                ? `Банк найден: ${bank.name}`
+                : 'Реквизиты банка заполнены.'
+        } catch (error) {
+            bankMessage.value = error.message || 'Не удалось получить данные банка.'
+        } finally {
+            bankLoading.value = false
+        }
+    }, 300)
+}
+
 async function save() {
     saving.value = true
     errors.value = {}
@@ -329,10 +374,25 @@ async function save() {
 
         <section v-if="isBusiness" class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Банковские реквизиты</h3>
-            <p class="mt-1 text-xs text-zinc-500">Банковские реквизиты не приходят из ЕГРЮЛ/ЕГРИП и заполняются вручную.</p>
+            <p class="mt-1 text-xs text-zinc-500">Введите БИК — название банка и корреспондентский счёт заполнятся автоматически по справочнику Банка России через DaData. Расчётный счёт организации заполняется вручную.</p>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-medium text-zinc-700">Наименование банка</label><input v-model="form.bank_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Банк"><p v-if="firstError('bank_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_name') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">БИК</label><input v-model="form.bank_bik" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="9 цифр"><p v-if="firstError('bank_bik')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_bik') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">БИК</label>
+                    <div class="relative">
+                        <input
+                            v-model="form.bank_bik"
+                            inputmode="numeric"
+                            maxlength="9"
+                            class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200"
+                            placeholder="9 цифр"
+                            @input="lookupBankByBik"
+                        >
+                        <span v-if="bankLoading" class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400">Ищем...</span>
+                    </div>
+                    <p v-if="firstError('bank_bik')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_bik') }}</p>
+                    <p v-if="bankMessage" class="mt-1.5 text-xs text-zinc-500">{{ bankMessage }}</p>
+                </div>
                 <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Расчётный счёт</label><input v-model="form.bank_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр"><p v-if="firstError('bank_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_account') }}</p></div>
                 <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Корреспондентский счёт</label><input v-model="form.bank_corr_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр"><p v-if="firstError('bank_corr_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_corr_account') }}</p></div>
             </div>

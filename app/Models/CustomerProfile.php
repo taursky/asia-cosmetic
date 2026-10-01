@@ -22,6 +22,9 @@ class CustomerProfile extends Model
     {
         return [
             'verified_at' => 'datetime',
+            'fns_checked_at' => 'datetime',
+            'fns_data' => 'array',
+            'fns_check_data' => 'array',
         ];
     }
 

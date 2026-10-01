@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\Account\AccountProfileController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;
+use App\Http\Controllers\Api\Account\ApiFnsController;
 
 Route::middleware('guest:web')->group(function (): void {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -129,4 +130,14 @@ Route::middleware('auth:web')
         Route::post('/phone/verify', [AccountIdentityController::class, 'verifyPhone'])
             ->middleware('throttle:10,1')
             ->name('phone.verify');
+        //API ФНС
+        Route::get('/fns/suggest', [ApiFnsController::class, 'suggest'])
+            ->middleware('throttle:30,1')
+            ->name('fns.suggest');
+        Route::get('/fns/lookup', [ApiFnsController::class, 'lookup'])
+            ->middleware('throttle:20,1')
+            ->name('fns.lookup');
+        Route::post('/fns/verify', [ApiFnsController::class, 'verify'])
+            ->middleware('throttle:10,1')
+            ->name('fns.verify');
     });

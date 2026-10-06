@@ -74,6 +74,10 @@ class CatalogController extends Controller
         $categoryIds = $this->categoryTreeIds($category);
 
         $products = $this->productListingQuery($locale)
+            ->whereHas('prices', function ($query)  {
+                //todo: убрать, когда будут цены
+                $query->where('product_price_type_id', 6);
+            })
             ->whereHas('categories', function ($query) use ($categoryIds) {
                 $query
                     ->whereIn('categories.id', $categoryIds)

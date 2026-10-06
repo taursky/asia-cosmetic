@@ -72,7 +72,7 @@ class OneCController extends Controller
     public function prices(BatchRequest $request): JsonResponse
     {
         Log::debug('Prices', [$request->all()]);
-        return $this->batch('prices', $request, fn ($items) => $this->prices->sync($items));
+        return $this->batch('prices ---- ', $request, fn ($items) => $this->prices->sync($items));
     }
 
     public function stocks(BatchRequest $request): JsonResponse

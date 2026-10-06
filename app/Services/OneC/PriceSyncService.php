@@ -24,13 +24,16 @@ class PriceSyncService
                 // Поэтому справочник цен сохранится даже если товар ещё не загружен.
                 $type = $this->resolvePriceType($row);
 
+                $productRef = $this->clearProductRef($row['product_ref']);
+
                 $product = Product::query()
-                    ->where('one_c_id', $row['product_ref'] ?? null)
+                    ->where('one_c_id', $productRef ?? null)
                     ->firstOrFail();
 
+                $variantRef = $this->clearProductRef($row['variant_ref'], 'variant');
                 $variant = ! empty($row['variant_ref'])
                     ? ProductVariant::query()
-                        ->where('one_c_id', $row['variant_ref'])
+                        ->where('one_c_id', $variantRef)
                         ->where('product_id', $product->id)
                         ->firstOrFail()
                     : null;
@@ -67,6 +70,16 @@ class PriceSyncService
         }
 
         return $result;
+    }
+
+    protected function clearProductRef($ref, $productType = 'product')
+    {
+        $r = explode(':', $ref);
+        $res = $r[0];
+        if ($productType == 'variant') {
+            $res = $r[1];
+        }
+        return $res;
     }
 
     private function resolvePriceType(array $row): ProductPriceType

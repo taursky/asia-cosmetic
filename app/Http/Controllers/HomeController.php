@@ -16,6 +16,10 @@ class HomeController extends Controller
         $baseProductQuery = fn (): Builder => Product::query()
             ->where('is_active', true)
             ->where('is_visible', true)
+            ->whereHas('prices', function ($query)  {
+                //todo: изменить, когда будут цены
+                $query->where('product_price_type_id', 6);
+            })
             ->whereHas('lang', fn (Builder $query) => $query->where('lang', $locale))
             ->with([
                 'lang',

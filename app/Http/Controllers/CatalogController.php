@@ -160,9 +160,12 @@ class CatalogController extends Controller
             ->where('products.is_visible', true)
             ->whereHas('langs', fn (Builder $query) => $query
                 ->where('lang', $locale))
+            ->whereHas('prices', function ($query)  {
+                //todo: убрать, когда будут цены
+                $query->where('product_price_type_id', 6);
+            })
             ->with([
                 'lang',
-
                 'images' => fn ($query) => $query
                     ->orderByDesc('is_primary')
                     ->orderBy('position'),

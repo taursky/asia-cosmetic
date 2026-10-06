@@ -12,6 +12,7 @@ use App\Services\OneC\OrderExchangeService;
 use App\Services\OneC\PriceSyncService;
 use App\Services\OneC\StockSyncService;
 use App\Services\OneC\SyncLogger;
+use App\Services\OneC\PriceTypeSyncService;
 use App\Services\OneC\WarehouseSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class OneCController extends Controller
         private readonly PriceSyncService $prices,
         private readonly StockSyncService $stocks,
         private readonly OrderExchangeService $orders,
+        private readonly PriceTypeSyncService $priceTypes,
     ) {}
 
     public function ping(): JsonResponse
@@ -56,6 +58,15 @@ class OneCController extends Controller
     {
         Log::debug('Products', [$request->all()]);
         return $this->batch('products', $request, fn ($items) => $this->catalog->sync($items));
+    }
+
+    public function priceTypes(BatchRequest $request): JsonResponse
+    {
+        return $this->batch(
+            'price_types',
+            $request,
+            fn (array $items) => $this->priceTypes->sync($items),
+        );
     }
 
     public function prices(BatchRequest $request): JsonResponse

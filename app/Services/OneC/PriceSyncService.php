@@ -8,6 +8,7 @@ use App\Models\ProductPrice;
 use App\Models\ProductPriceType;
 use App\Models\ProductVariant;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class PriceSyncService
@@ -20,40 +21,65 @@ class PriceSyncService
             $result->processed++;
 
             try {
-                // ВАЖНО: тип цены синхронизируем ДО поиска товара.
-                // Поэтому справочник цен сохранится даже если товар ещё не загружен.
+                // Тип цены синхронизируем даже если товар ещё не загружен.
                 $type = $this->resolvePriceType($row);
 
-                $productRef = $this->clearProductRef($row['product_ref']);
+                $productRef = $this->normalizeRef($row['product_ref'] ?? null);
+
+                if (! $productRef) {
+                    throw new RuntimeException('Для цены не указан product_ref.');
+                }
 
                 $product = Product::query()
-                    ->where('one_c_id', $productRef ?? null)
-                    ->firstOrFail();
+                    ->where('one_c_id', $productRef)
+                    ->first();
 
-                $variantRef = $this->clearProductRef($row['variant_ref'], 'variant');
-                $variant = ! empty($row['variant_ref'])
-                    ? ProductVariant::query()
+                if (! $product) {
+                    throw new RuntimeException("Товар с GUID 1С {$productRef} не найден. Сначала синхронизируйте товары.");
+                }
+
+                $variantRef = $this->normalizeRef($row['variant_ref'] ?? null);
+                $variant = null;
+
+                if ($variantRef) {
+                    $variant = ProductVariant::query()
                         ->where('one_c_id', $variantRef)
                         ->where('product_id', $product->id)
-                        ->firstOrFail()
-                    : null;
+                        ->first();
+
+                    if (! $variant) {
+                        throw new RuntimeException(
+                            "Вариант с GUID 1С {$variantRef} для товара {$productRef} не найден. Сначала синхронизируйте товары/варианты."
+                        );
+                    }
+                }
 
                 $key = [
                     'product_id' => $product->id,
                     'product_variant_id' => $variant?->id,
                     'product_price_type_id' => $type->id,
-                    'min_quantity' => $row['min_quantity'] ?? 1,
+                    'min_quantity' => (int) ($row['min_quantity'] ?? 1),
                 ];
 
                 $price = ProductPrice::query()->firstOrNew($key);
                 $exists = $price->exists;
 
+                // В регистре цен 1С отдельного UUID записи нет. Поле ref в обмене
+                // является составным ключом product:variant:priceType, поэтому
+                // сохраняем его в external_id. one_c_id оставляем только если
+                // пришёл настоящий UUID.
+                $exchangeRef = trim((string) ($row['ref'] ?? ''));
+
                 $price->fill([
                     'amount' => $row['amount'],
                     'old_amount' => $row['old_amount'] ?? null,
                     'currency' => $row['currency'] ?? 'RUB',
-                    'external_id' => $row['external_id'] ?? null,
-                    'one_c_id' => $row['ref'] ?? null,
+                    'external_id' => $exchangeRef !== ''
+                        ? $exchangeRef
+                        : ($row['external_id'] ?? $price->external_id),
+                    'one_c_id' => $this->isUuid($exchangeRef)
+                        ? $exchangeRef
+                        : $price->one_c_id,
                     'valid_from' => $row['valid_from'] ?? null,
                     'valid_until' => $row['valid_until'] ?? null,
                     'synced_at' => now(),
@@ -64,6 +90,8 @@ class PriceSyncService
                 $result->errors[] = [
                     'index' => $index,
                     'ref' => $row['ref'] ?? null,
+                    'product_ref' => $row['product_ref'] ?? null,
+                    'variant_ref' => $row['variant_ref'] ?? null,
                     'message' => $e->getMessage(),
                 ];
             }
@@ -72,14 +100,21 @@ class PriceSyncService
         return $result;
     }
 
-    protected function clearProductRef($ref, $productType = 'product')
+    private function normalizeRef(mixed $ref): ?string
     {
-        $r = explode(':', $ref);
-        $res = $r[0];
-        if ($productType == 'variant') {
-            $res = $r[1];
+        if (! is_string($ref)) {
+            return null;
         }
-        return $res;
+
+        $ref = trim($ref);
+
+        return $ref !== '' ? $ref : null;
+    }
+
+    private function isUuid(?string $value): bool
+    {
+        return is_string($value)
+            && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i', $value) === 1;
     }
 
     private function resolvePriceType(array $row): ProductPriceType
@@ -102,7 +137,8 @@ class PriceSyncService
             $name = trim((string) ($row['price_type_name'] ?? 'Цена'));
 
             $type = ProductPriceType::query()->create([
-                'code' => $row['price_type_code'] ?? (Str::slug($name, '_') ?: 'price_' . Str::lower(Str::random(8))),
+                'code' => $row['price_type_code']
+                    ?? (Str::slug($name, '_') ?: 'price_' . Str::lower(Str::random(8))),
                 'name' => $name,
                 'one_c_id' => $row['price_type_ref'] ?? null,
             ]);

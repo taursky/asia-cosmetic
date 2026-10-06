@@ -15,6 +15,7 @@ use App\Services\OneC\SyncLogger;
 use App\Services\OneC\WarehouseSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class OneCController extends Controller
 {
@@ -40,31 +41,38 @@ class OneCController extends Controller
 
     public function warehouses(BatchRequest $request): JsonResponse
     {
+        Log::debug('Warehouses', [$request->all()]);
+
         return $this->batch('warehouses', $request, fn ($items) => $this->warehouses->sync($items));
     }
 
     public function categories(BatchRequest $request): JsonResponse
     {
+        Log::debug('Categories', [$request->all()]);
         return $this->batch('categories', $request, fn ($items) => $this->categories->sync($items));
     }
 
     public function products(BatchRequest $request): JsonResponse
     {
+        Log::debug('Products', [$request->all()]);
         return $this->batch('products', $request, fn ($items) => $this->catalog->sync($items));
     }
 
     public function prices(BatchRequest $request): JsonResponse
     {
+        Log::debug('Prices', [$request->all()]);
         return $this->batch('prices', $request, fn ($items) => $this->prices->sync($items));
     }
 
     public function stocks(BatchRequest $request): JsonResponse
     {
+        Log::debug('Stocks', [$request->all()]);
         return $this->batch('stocks', $request, fn ($items) => $this->stocks->sync($items));
     }
 
     public function orders(Request $request): JsonResponse
     {
+        Log::debug('Orders', [$request->all()]);
         $paginator = $this->orders->pending((int) $request->integer('per_page', 100));
         return response()->json([
             'data' => $paginator->items(),
@@ -79,6 +87,7 @@ class OneCController extends Controller
 
     public function orderStatus(OrderStatusRequest $request, Order $order): JsonResponse
     {
+        Log::debug('Order status', [$request->all()]);
         $updated = $this->logger->run(
             'order', '1c_to_site', $order->uuid, $request->validated(),
             fn () => $this->orders->markStatus($order, $request->validated())->toArray()

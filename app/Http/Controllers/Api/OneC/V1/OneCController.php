@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Api\OneC\V1;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OneC\BatchRequest;
 use App\Http\Requests\OneC\OrderStatusRequest;
+use App\Http\Requests\OneC\ImageSyncRequest;
 use App\Models\Order;
 use App\Services\OneC\CatalogSyncService;
 use App\Services\OneC\CategorySyncService;
 use App\Services\OneC\OrderExchangeService;
+use App\Services\OneC\ImageSyncService;
 use App\Services\OneC\PriceSyncService;
 use App\Services\OneC\StockSyncService;
 use App\Services\OneC\SyncLogger;
@@ -29,6 +31,7 @@ class OneCController extends Controller
         private readonly StockSyncService $stocks,
         private readonly OrderExchangeService $orders,
         private readonly PriceTypeSyncService $priceTypes,
+        private readonly ImageSyncService $images,
     ) {}
 
     public function ping(): JsonResponse
@@ -131,4 +134,22 @@ class OneCController extends Controller
         );
     }
 
+    public function image(ImageSyncRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        // Не логируем content_base64 целиком.
+        Log::debug('1C image', [
+            'entity_type' => $data['entity_type'],
+            'entity_ref' => $data['entity_ref'],
+            'image_ref' => $data['image_ref'],
+            'filename' => $data['filename'] ?? null,
+            'position' => $data['position'] ?? null,
+            'is_primary' => $data['is_primary'] ?? null,
+        ]);
+
+        return response()->json([
+            'ok' => true,
+            'image' => $this->images->sync($data),
+        ]);
+    }
 }

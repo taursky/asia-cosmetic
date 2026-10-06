@@ -23,6 +23,8 @@ Route::prefix('1c/v1')
         Route::post('/prices/batch', [OneCController::class, 'prices']);
         Route::post('/stocks/batch', [OneCController::class, 'stocks']);
 
+        Route::post('/images', [OneCController::class, 'image']);
+
         Route::get('/orders', [OneCController::class, 'orders']);
         Route::post('/orders/{order:uuid}/status', [OneCController::class, 'orderStatus']);
     });

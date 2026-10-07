@@ -19,29 +19,48 @@ class CatalogSyncService
     public function sync(array $items): SyncResult
     {
         $result = new SyncResult();
+
         foreach ($items as $index => $data) {
             $result->processed++;
+
             try {
                 DB::transaction(fn () => $this->syncProduct($data, $result));
             } catch (Throwable $e) {
-                $result->errors[] = ['index' => $index, 'ref' => $data['ref'] ?? null, 'message' => $e->getMessage()];
+                $result->errors[] = [
+                    'index' => $index,
+                    'ref' => $data['ref'] ?? null,
+                    'source' => $data['source'] ?? null,
+                    'message' => $e->getMessage(),
+                ];
             }
         }
+
         return $result;
     }
 
     private function syncProduct(array $data, SyncResult $result): void
     {
         $locale = (string) config('onec.locale', 'ru');
-        $oneCId = $data['ref'] ?? $data['one_c_id'] ?? null;
-        if (! $oneCId) throw new \InvalidArgumentException('Product ref is required.');
+        $source = $this->source($data);
+        $oneCId = trim((string) ($data['ref'] ?? $data['one_c_id'] ?? ''));
 
-        $product = Product::withTrashed()->firstOrNew(['one_c_id' => $oneCId]);
+        if ($oneCId === '') {
+            throw new \InvalidArgumentException('Product ref is required.');
+        }
+
+        $product = Product::withTrashed()
+            ->where('source', $source)
+            ->where('one_c_id', $oneCId)
+            ->first() ?? new Product();
+
         $exists = $product->exists;
+
         $product->fill([
+            'source' => $source,
+            'one_c_id' => $oneCId,
+            'sync_uid' => $data['sync_uid'] ?? $product->sync_uid,
             'external_id' => $data['external_id'] ?? $product->external_id,
             'sku' => $data['sku'] ?? $product->sku,
-            'source' => config('onec.source', '1c-unf'),
             'is_active' => (bool) ($data['active'] ?? true),
             'vat_rate' => $data['vat_rate'] ?? $product->vat_rate,
             'unit' => $data['unit'] ?? $product->unit,
@@ -51,7 +70,10 @@ class CatalogSyncService
             'height' => $data['height'] ?? $product->height,
             'synced_at' => now(),
         ])->save();
-        if (method_exists($product, 'trashed') && $product->trashed()) $product->restore();
+
+        if (method_exists($product, 'trashed') && $product->trashed()) {
+            $product->restore();
+        }
 
         if (! empty($data['name'])) {
             $lang = $data['lang'] ?? $locale;
@@ -65,7 +87,7 @@ class CatalogSyncService
 
         $this->syncCategories($product, $data['categories'] ?? []);
         $this->syncAttributes($product, $data['attributes'] ?? [], $locale);
-        $this->syncVariants($product, $data['variants'] ?? [], $locale);
+        $this->syncVariants($product, $data['variants'] ?? [], $locale, $source);
 
         $exists ? $result->updated++ : $result->created++;
     }
@@ -77,31 +99,45 @@ class CatalogSyncService
             ->filter()
             ->map(fn ($ref) => Category::query()->where('one_c_id', $ref)->value('id'))
             ->filter()
+            ->unique()
             ->values()
             ->all();
-        if ($ids !== []) $product->categories()->sync($ids);
+
+        // Важно: sync([]) удаляет старые связи, если менеджер убрал товар из всех категорий в 1С.
+        $product->categories()->sync($ids);
     }
 
     private function syncAttributes(Product $product, array $attributes, string $locale): void
     {
         $valueIds = [];
+
         foreach ($attributes as $row) {
             $name = trim((string) ($row['name'] ?? ''));
             $value = trim((string) ($row['value'] ?? ''));
-            if ($name === '' || $value === '') continue;
+            if ($name === '' || $value === '') {
+                continue;
+            }
 
             $attribute = $this->findOrCreateAttribute($row, $name, $locale);
             $attributeValue = $this->findOrCreateAttributeValue($attribute, $row, $value, $locale);
             $valueIds[] = $attributeValue->id;
         }
-        if ($valueIds !== []) $product->attributeValues()->sync($valueIds);
+
+        $product->attributeValues()->sync(array_values(array_unique($valueIds)));
     }
 
     private function findOrCreateAttribute(array $row, string $name, string $locale): Attribute
     {
         $attribute = null;
-        if (! empty($row['attribute_ref'])) $attribute = Attribute::query()->where('one_c_id', $row['attribute_ref'])->first();
-        $attribute ??= Attribute::query()->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('name', $name))->first();
+
+        if (! empty($row['attribute_ref'])) {
+            $attribute = Attribute::query()->where('one_c_id', $row['attribute_ref'])->first();
+        }
+
+        $attribute ??= Attribute::query()
+            ->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('name', $name))
+            ->first();
+
         if (! $attribute) {
             $attribute = Attribute::create([
                 'code' => Str::slug($name, '_') ?: 'attr_' . Str::lower(Str::random(8)),
@@ -112,14 +148,22 @@ class CatalogSyncService
             ]);
             $attribute->langs()->create(['lang' => $locale, 'name' => $name]);
         }
+
         return $attribute;
     }
 
     private function findOrCreateAttributeValue(Attribute $attribute, array $row, string $value, string $locale): AttributeValue
     {
         $model = null;
-        if (! empty($row['value_ref'])) $model = AttributeValue::query()->where('one_c_id', $row['value_ref'])->first();
-        $model ??= $attribute->values()->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('value', $value))->first();
+
+        if (! empty($row['value_ref'])) {
+            $model = AttributeValue::query()->where('one_c_id', $row['value_ref'])->first();
+        }
+
+        $model ??= $attribute->values()
+            ->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('value', $value))
+            ->first();
+
         if (! $model) {
             $model = $attribute->values()->create([
                 'code' => Str::slug($value, '_') ?: 'value_' . Str::lower(Str::random(8)),
@@ -127,18 +171,27 @@ class CatalogSyncService
             ]);
             $model->langs()->create(['lang' => $locale, 'value' => $value]);
         }
+
         return $model;
     }
 
-    private function syncVariants(Product $product, array $variants, string $locale): void
+    private function syncVariants(Product $product, array $variants, string $locale, string $source): void
     {
         foreach ($variants as $row) {
-            $ref = $row['ref'] ?? $row['one_c_id'] ?? null;
-            if (! $ref) continue;
+            $ref = trim((string) ($row['ref'] ?? $row['one_c_id'] ?? ''));
+            if ($ref === '') {
+                continue;
+            }
 
-            $variant = ProductVariant::withTrashed()->firstOrNew(['one_c_id' => $ref]);
+            $variant = ProductVariant::withTrashed()
+                ->where('source', $source)
+                ->where('one_c_id', $ref)
+                ->first() ?? new ProductVariant();
+
             $variant->fill([
+                'source' => $source,
                 'product_id' => $product->id,
+                'one_c_id' => $ref,
                 'external_id' => $row['external_id'] ?? $variant->external_id,
                 'sku' => $row['sku'] ?? $variant->sku,
                 'barcode' => $row['barcode'] ?? $variant->barcode,
@@ -150,7 +203,10 @@ class CatalogSyncService
                 'height' => $row['height'] ?? $variant->height,
                 'synced_at' => now(),
             ])->save();
-            if (method_exists($variant, 'trashed') && $variant->trashed()) $variant->restore();
+
+            if (method_exists($variant, 'trashed') && $variant->trashed()) {
+                $variant->restore();
+            }
 
             if (! empty($row['name'])) {
                 $variant->langs()->updateOrCreate(['lang' => $row['lang'] ?? $locale], [
@@ -167,14 +223,23 @@ class CatalogSyncService
     private function syncVariantOptions(Product $product, ProductVariant $variant, array $options, string $locale): void
     {
         $valueIds = [];
+
         foreach ($options as $row) {
             $name = trim((string) ($row['name'] ?? ''));
             $value = trim((string) ($row['value'] ?? ''));
-            if ($name === '' || $value === '') continue;
+            if ($name === '' || $value === '') {
+                continue;
+            }
 
             $option = null;
-            if (! empty($row['option_ref'])) $option = Option::query()->where('one_c_id', $row['option_ref'])->first();
-            $option ??= Option::query()->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('name', $name))->first();
+            if (! empty($row['option_ref'])) {
+                $option = Option::query()->where('one_c_id', $row['option_ref'])->first();
+            }
+
+            $option ??= Option::query()
+                ->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('name', $name))
+                ->first();
+
             if (! $option) {
                 $option = Option::create([
                     'code' => Str::slug($name, '_') ?: 'option_' . Str::lower(Str::random(8)),
@@ -184,8 +249,14 @@ class CatalogSyncService
             }
 
             $optionValue = null;
-            if (! empty($row['value_ref'])) $optionValue = OptionValue::query()->where('one_c_id', $row['value_ref'])->first();
-            $optionValue ??= $option->values()->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('value', $value))->first();
+            if (! empty($row['value_ref'])) {
+                $optionValue = OptionValue::query()->where('one_c_id', $row['value_ref'])->first();
+            }
+
+            $optionValue ??= $option->values()
+                ->whereHas('langs', fn ($q) => $q->where('lang', $locale)->where('value', $value))
+                ->first();
+
             if (! $optionValue) {
                 $optionValue = $option->values()->create([
                     'code' => Str::slug($value, '_') ?: 'value_' . Str::lower(Str::random(8)),
@@ -193,12 +264,20 @@ class CatalogSyncService
                 ]);
                 $optionValue->langs()->create(['lang' => $locale, 'value' => $value]);
             }
+
             $valueIds[] = $optionValue->id;
         }
 
+        $valueIds = array_values(array_unique($valueIds));
+        $variant->optionValues()->sync($valueIds);
+
         if ($valueIds !== []) {
-            $variant->optionValues()->sync($valueIds);
             $product->optionValues()->syncWithoutDetaching($valueIds);
         }
+    }
+
+    private function source(array $data): string
+    {
+        return trim((string) ($data['source'] ?? config('onec.source', '1c-unf'))) ?: '1c-unf';
     }
 }

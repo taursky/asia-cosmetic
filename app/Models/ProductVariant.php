@@ -15,7 +15,7 @@ class ProductVariant extends Model
     use SoftDeletes, LangTrait;
 
     protected $fillable = [
-        'product_id', 'external_id', 'one_c_id', 'sku', 'barcode', 'is_active',
+        'product_id', 'source', 'external_id', 'one_c_id', 'sku', 'barcode', 'is_active',
         'stock', 'weight', 'length', 'width', 'height', 'sort_order', 'sync_hash', 'synced_at',
     ];
 

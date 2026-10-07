@@ -21,9 +21,8 @@ class PriceSyncService
             $result->processed++;
 
             try {
-                // Тип цены синхронизируем даже если товар ещё не загружен.
+                $source = $this->source($row);
                 $type = $this->resolvePriceType($row);
-
                 $productRef = $this->normalizeRef($row['product_ref'] ?? null);
 
                 if (! $productRef) {
@@ -31,11 +30,12 @@ class PriceSyncService
                 }
 
                 $product = Product::query()
+                    ->where('source', $source)
                     ->where('one_c_id', $productRef)
                     ->first();
 
                 if (! $product) {
-                    throw new RuntimeException("Товар с GUID 1С {$productRef} не найден. Сначала синхронизируйте товары.");
+                    throw new RuntimeException("Товар {$source}:{$productRef} не найден. Сначала синхронизируйте товары.");
                 }
 
                 $variantRef = $this->normalizeRef($row['variant_ref'] ?? null);
@@ -43,14 +43,13 @@ class PriceSyncService
 
                 if ($variantRef) {
                     $variant = ProductVariant::query()
+                        ->where('source', $source)
                         ->where('one_c_id', $variantRef)
                         ->where('product_id', $product->id)
                         ->first();
 
                     if (! $variant) {
-                        throw new RuntimeException(
-                            "Вариант с GUID 1С {$variantRef} для товара {$productRef} не найден. Сначала синхронизируйте товары/варианты."
-                        );
+                        throw new RuntimeException("Вариант {$source}:{$variantRef} для товара {$productRef} не найден.");
                     }
                 }
 
@@ -63,23 +62,14 @@ class PriceSyncService
 
                 $price = ProductPrice::query()->firstOrNew($key);
                 $exists = $price->exists;
-
-                // В регистре цен 1С отдельного UUID записи нет. Поле ref в обмене
-                // является составным ключом product:variant:priceType, поэтому
-                // сохраняем его в external_id. one_c_id оставляем только если
-                // пришёл настоящий UUID.
                 $exchangeRef = trim((string) ($row['ref'] ?? ''));
 
                 $price->fill([
                     'amount' => $row['amount'],
                     'old_amount' => $row['old_amount'] ?? null,
                     'currency' => $row['currency'] ?? 'RUB',
-                    'external_id' => $exchangeRef !== ''
-                        ? $exchangeRef
-                        : ($row['external_id'] ?? $price->external_id),
-                    'one_c_id' => $this->isUuid($exchangeRef)
-                        ? $exchangeRef
-                        : $price->one_c_id,
+                    'external_id' => $exchangeRef !== '' ? $exchangeRef : ($row['external_id'] ?? $price->external_id),
+                    'one_c_id' => $this->isUuid($exchangeRef) ? $exchangeRef : $price->one_c_id,
                     'valid_from' => $row['valid_from'] ?? null,
                     'valid_until' => $row['valid_until'] ?? null,
                     'synced_at' => now(),
@@ -89,6 +79,7 @@ class PriceSyncService
             } catch (Throwable $e) {
                 $result->errors[] = [
                     'index' => $index,
+                    'source' => $row['source'] ?? null,
                     'ref' => $row['ref'] ?? null,
                     'product_ref' => $row['product_ref'] ?? null,
                     'variant_ref' => $row['variant_ref'] ?? null,
@@ -102,13 +93,14 @@ class PriceSyncService
 
     private function normalizeRef(mixed $ref): ?string
     {
-        if (! is_string($ref)) {
-            return null;
-        }
-
+        if (! is_string($ref)) return null;
         $ref = trim($ref);
-
         return $ref !== '' ? $ref : null;
+    }
+
+    private function source(array $row): string
+    {
+        return trim((string) ($row['source'] ?? config('onec.source', '1c-unf'))) ?: '1c-unf';
     }
 
     private function isUuid(?string $value): bool
@@ -122,23 +114,17 @@ class PriceSyncService
         $type = null;
 
         if (! empty($row['price_type_ref'])) {
-            $type = ProductPriceType::query()
-                ->where('one_c_id', $row['price_type_ref'])
-                ->first();
+            $type = ProductPriceType::query()->where('one_c_id', $row['price_type_ref'])->first();
         }
 
         if (! $type && ! empty($row['price_type_code'])) {
-            $type = ProductPriceType::query()
-                ->where('code', $row['price_type_code'])
-                ->first();
+            $type = ProductPriceType::query()->where('code', $row['price_type_code'])->first();
         }
 
         if (! $type) {
             $name = trim((string) ($row['price_type_name'] ?? 'Цена'));
-
             $type = ProductPriceType::query()->create([
-                'code' => $row['price_type_code']
-                    ?? (Str::slug($name, '_') ?: 'price_' . Str::lower(Str::random(8))),
+                'code' => $row['price_type_code'] ?? (Str::slug($name, '_') ?: 'price_' . Str::lower(Str::random(8))),
                 'name' => $name,
                 'one_c_id' => $row['price_type_ref'] ?? null,
             ]);

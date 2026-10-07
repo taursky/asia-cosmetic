@@ -12,44 +12,35 @@ class StockSyncService
 {
     public function sync(array $items): array
     {
-        $stats = [
-            'processed' => 0,
-            'created' => 0,
-            'updated' => 0,
-            'variants_recalculated' => 0,
-        ];
-
+        $stats = ['processed' => 0, 'created' => 0, 'updated' => 0, 'variants_recalculated' => 0];
         $variantIds = [];
 
         DB::transaction(function () use ($items, &$stats, &$variantIds): void {
             foreach ($items as $item) {
+                $source = trim((string) ($item['source'] ?? config('onec.source', '1c-unf'))) ?: '1c-unf';
                 $variantRef = trim((string) ($item['variant_ref'] ?? ''));
                 $warehouseRef = trim((string) ($item['warehouse_ref'] ?? ''));
 
                 if ($variantRef === '' || $warehouseRef === '') {
-                    throw ValidationException::withMessages([
-                        'items' => 'Для остатка обязательны variant_ref и warehouse_ref.',
-                    ]);
+                    throw ValidationException::withMessages(['items' => 'Для остатка обязательны variant_ref и warehouse_ref.']);
                 }
 
                 $variant = ProductVariant::withTrashed()
+                    ->where('source', $source)
                     ->where('one_c_id', $variantRef)
                     ->first();
 
                 if (! $variant) {
-                    throw ValidationException::withMessages([
-                        'items' => "SKU с GUID {$variantRef} не найден.",
-                    ]);
+                    throw ValidationException::withMessages(['items' => "SKU {$source}:{$variantRef} не найден."]);
                 }
 
                 $warehouse = Warehouse::query()
+                    ->where('source', $source)
                     ->where('one_c_id', $warehouseRef)
                     ->first();
 
                 if (! $warehouse) {
-                    throw ValidationException::withMessages([
-                        'items' => "Склад с GUID {$warehouseRef} не найден. Сначала синхронизируйте warehouses.",
-                    ]);
+                    throw ValidationException::withMessages(['items' => "Склад {$source}:{$warehouseRef} не найден."]);
                 }
 
                 $quantity = (float) ($item['quantity'] ?? 0);
@@ -74,12 +65,9 @@ class StockSyncService
                     'reserved' => $reserved,
                     'available' => $available,
                     'synced_at' => now(),
-                ]);
-
-                $stock->save();
+                ])->save();
 
                 $variantIds[$variant->id] = $variant->id;
-
                 $stats['processed']++;
                 $stats[$created ? 'created' : 'updated']++;
             }
@@ -100,11 +88,9 @@ class StockSyncService
             ->whereHas('warehouse', fn ($query) => $query->where('is_active', true))
             ->sum('available');
 
-        ProductVariant::withTrashed()
-            ->whereKey($variantId)
-            ->update([
-                'stock' => $totalAvailable,
-                'synced_at' => now(),
-            ]);
+        ProductVariant::withTrashed()->whereKey($variantId)->update([
+            'stock' => $totalAvailable,
+            'synced_at' => now(),
+        ]);
     }
 }

@@ -22,7 +22,6 @@ Route::prefix('1c/v1')
         Route::post('/price-types/batch', [OneCController::class, 'priceTypes']);
         Route::post('/prices/batch', [OneCController::class, 'prices']);
         Route::post('/stocks/batch', [OneCController::class, 'stocks']);
-
         Route::post('/images', [OneCController::class, 'image']);
 
         Route::get('/orders', [OneCController::class, 'orders']);

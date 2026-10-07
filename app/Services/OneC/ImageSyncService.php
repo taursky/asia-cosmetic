@@ -16,7 +16,8 @@ class ImageSyncService
 
     public function sync(array $data): array
     {
-        $model = $this->resolveModel($data['entity_type'], $data['entity_ref']);
+        $source = trim((string) ($data['source'] ?? config('onec.source', '1c-unf'))) ?: '1c-unf';
+        $model = $this->resolveModel($data['entity_type'], $data['entity_ref'], $source);
 
         $binary = base64_decode($data['content_base64'], true);
         if ($binary === false || $binary === '') {
@@ -93,17 +94,17 @@ class ImageSyncService
         });
     }
 
-    private function resolveModel(string $type, string $ref): Model
+    private function resolveModel(string $type, string $ref, string $source): Model
     {
         $model = match ($type) {
-            'product' => Product::query()->where('one_c_id', $ref)->first(),
-            'variant' => ProductVariant::query()->where('one_c_id', $ref)->first(),
+            'product' => Product::query()->where('source', $source)->where('one_c_id', $ref)->first(),
+            'variant' => ProductVariant::query()->where('source', $source)->where('one_c_id', $ref)->first(),
             default => null,
         };
 
         if (! $model) {
             throw ValidationException::withMessages([
-                'entity_ref' => "Объект {$type} с GUID 1С {$ref} не найден. Сначала синхронизируйте товары.",
+                'entity_ref' => "Объект {$type} {$source}:{$ref} не найден. Сначала синхронизируйте товары.",
             ]);
         }
 

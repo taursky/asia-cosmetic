@@ -9,12 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Warehouse extends Model
 {
     protected $fillable = [
+        'source',
         'external_id',
         'one_c_id',
         'code',
         'name',
         'is_active',
-        'is_main',
         'sort_order',
         'synced_at',
     ];
@@ -23,7 +23,6 @@ class Warehouse extends Model
     {
         return [
             'is_active' => 'boolean',
-            'is_main' => 'boolean',
             'synced_at' => 'datetime',
         ];
     }

@@ -14,7 +14,7 @@ class Product extends Model
     use SoftDeletes, LangTrait;
 
     protected $fillable = [
-        'external_id', 'one_c_id', 'sku', 'source', 'source_url', 'is_active', 'is_visible',
+        'external_id', 'one_c_id', 'sku', 'source', 'sync_uid', 'source_url', 'is_active', 'is_visible',
         'allow_discounts', 'vat_rate', 'unit', 'weight', 'length', 'width', 'height',
         'video_url', 'rating', 'reviews_count', 'sync_hash', 'synced_at',
     ];
@@ -40,39 +40,25 @@ class Product extends Model
         return $query->where('is_active', true)->where('is_visible', true);
     }
 
-    public function variants(): HasMany
-    {
-        return $this->hasMany(ProductVariant::class)->orderBy('sort_order');
-    }
-
-    public function prices(): HasMany
-    {
-        return $this->hasMany(ProductPrice::class);
-    }
-
-    public function images(): MorphMany
-    {
-        return $this->morphMany(Image::class, 'imageable');
-    }
+    public function variants(): HasMany { return $this->hasMany(ProductVariant::class)->orderBy('sort_order'); }
+    public function prices(): HasMany { return $this->hasMany(ProductPrice::class); }
+    public function images(): MorphMany { return $this->morphMany(Image::class, 'imageable'); }
 
     public function attributeValues(): BelongsToMany
     {
         return $this->belongsToMany(AttributeValue::class, 'product_attribute_values')
-            ->withPivot('sort_order')
-            ->orderByPivot('sort_order');
+            ->withPivot('sort_order')->orderByPivot('sort_order');
     }
 
     public function optionValues(): BelongsToMany
     {
         return $this->belongsToMany(OptionValue::class, 'product_option_values')
-            ->withPivot('sort_order')
-            ->orderByPivot('sort_order');
+            ->withPivot('sort_order')->orderByPivot('sort_order');
     }
 
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class)
-            ->withPivot('sort_order')
-            ->orderByPivot('sort_order');
+            ->withPivot('sort_order')->orderByPivot('sort_order');
     }
 }

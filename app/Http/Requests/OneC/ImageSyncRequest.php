@@ -14,6 +14,7 @@ class ImageSyncRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'source' => ['nullable', 'string', 'max:100'],
             'entity_type' => ['required', 'in:product,variant'],
             'entity_ref' => ['required', 'uuid'],
             'image_ref' => ['required', 'string', 'max:255'],

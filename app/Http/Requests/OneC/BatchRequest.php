@@ -14,7 +14,8 @@ class BatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'exchange_id' => ['nullable', 'string', 'max:100'],
+            'source' => ['nullable', 'string', 'max:100'],
+            'exchange_id' => ['nullable', 'string', 'max:150'],
             'items' => ['required', 'array', 'max:1000'],
             'items.*' => ['required', 'array'],
         ];

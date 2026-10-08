@@ -97,8 +97,12 @@ class CatalogSyncService
                     $lang,
                     (string) ($data['slug'] ?? $data['name'])
                 ),
-                'short_description' => $data['short_description'] ?? null,
-                'description' => $data['description'] ?? null,
+                'short_description' => array_key_exists('short_description', $data)
+                    ? $data['short_description']
+                    : $product->langs()->where('lang', $lang)->value('short_description'),
+                'description' => array_key_exists('description', $data)
+                    ? $data['description']
+                    : $product->langs()->where('lang', $lang)->value('description'),
             ]);
         }
 

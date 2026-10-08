@@ -11,6 +11,7 @@ use App\Models\OptionValue;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -26,6 +27,17 @@ class CatalogSyncService
             try {
                 DB::transaction(fn () => $this->syncProduct($data, $result));
             } catch (Throwable $e) {
+
+                Log::error('1C product sync failed', [
+                    'index' => $index,
+                    'ref' => $data['ref'] ?? null,
+                    'source' => $data['source'] ?? null,
+                    'name' => $data['name'] ?? null,
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]);
+
                 $result->errors[] = [
                     'index' => $index,
                     'ref' => $data['ref'] ?? null,

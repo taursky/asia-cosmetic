@@ -88,10 +88,15 @@ class CatalogSyncService
         }
 
         if (! empty($data['name'])) {
-            $lang = $data['lang'] ?? $locale;
+            $lang = (string) ($data['lang'] ?? $locale);
+
             $product->langs()->updateOrCreate(['lang' => $lang], [
                 'name' => $data['name'],
-                'slug' => $data['slug'] ?? Str::slug($data['name']),
+                'slug' => $this->uniqueProductSlug(
+                    $product,
+                    $lang,
+                    (string) ($data['slug'] ?? $data['name'])
+                ),
                 'short_description' => $data['short_description'] ?? null,
                 'description' => $data['description'] ?? null,
             ]);
@@ -109,7 +114,14 @@ class CatalogSyncService
         $ids = collect($categories)
             ->pluck('ref')
             ->filter()
-            ->map(fn ($ref) => Category::query()->where('one_c_id', $ref)->value('id'))
+            ->map(function ($ref) {
+                return Category::query()
+                    ->where(function ($query) use ($ref) {
+                        $query->where('sync_uid', $ref)
+                            ->orWhere('one_c_id', $ref);
+                    })
+                    ->value('id');
+            })
             ->filter()
             ->unique()
             ->values()
@@ -152,7 +164,11 @@ class CatalogSyncService
 
         if (! $attribute) {
             $attribute = Attribute::create([
-                'code' => Str::slug($name, '_') ?: 'attr_' . Str::lower(Str::random(8)),
+                'code' => $this->safeCode(
+                    $name,
+                    'attr',
+                    (string) ($row['attribute_ref'] ?? '')
+                ),
                 'type' => $row['type'] ?? 'select',
                 'one_c_id' => $row['attribute_ref'] ?? null,
                 'is_filterable' => (bool) ($row['is_filterable'] ?? true),
@@ -178,7 +194,11 @@ class CatalogSyncService
 
         if (! $model) {
             $model = $attribute->values()->create([
-                'code' => Str::slug($value, '_') ?: 'value_' . Str::lower(Str::random(8)),
+                'code' => $this->safeCode(
+                    $value,
+                    'value',
+                    (string) ($row['value_ref'] ?? '')
+                ),
                 'one_c_id' => $row['value_ref'] ?? null,
             ]);
             $model->langs()->create(['lang' => $locale, 'value' => $value]);
@@ -254,7 +274,11 @@ class CatalogSyncService
 
             if (! $option) {
                 $option = Option::create([
-                    'code' => Str::slug($name, '_') ?: 'option_' . Str::lower(Str::random(8)),
+                    'code' => $this->safeCode(
+                        $name,
+                        'option',
+                        (string) ($row['option_ref'] ?? '')
+                    ),
                     'one_c_id' => $row['option_ref'] ?? null,
                 ]);
                 $option->langs()->create(['lang' => $locale, 'name' => $name]);
@@ -271,7 +295,11 @@ class CatalogSyncService
 
             if (! $optionValue) {
                 $optionValue = $option->values()->create([
-                    'code' => Str::slug($value, '_') ?: 'value_' . Str::lower(Str::random(8)),
+                    'code' => $this->safeCode(
+                        $value,
+                        'value',
+                        (string) ($row['value_ref'] ?? '')
+                    ),
                     'one_c_id' => $row['value_ref'] ?? null,
                 ]);
                 $optionValue->langs()->create(['lang' => $locale, 'value' => $value]);
@@ -286,6 +314,74 @@ class CatalogSyncService
         if ($valueIds !== []) {
             $product->optionValues()->syncWithoutDetaching($valueIds);
         }
+    }
+
+    /**
+     * Stable short code for DB columns such as attribute_values.code.
+     *
+     * Long free-text 1C properties ("Состав", "Способ применения", etc.)
+     * must never be transliterated in full into code: that easily exceeds
+     * VARCHAR limits. We keep a readable prefix and add a deterministic hash.
+     */
+    private function safeCode(string $value, string $prefix, string $externalRef = ''): string
+    {
+        $slug = Str::slug($value, '_');
+
+        if ($slug === '') {
+            $slug = $prefix;
+        }
+
+        // Keep plenty of headroom even if the DB column is VARCHAR(191/255).
+        if (mb_strlen($slug) <= 120) {
+            return $slug;
+        }
+
+        $hashSource = $externalRef !== '' ? $externalRef : $value;
+        $hash = substr(sha1($hashSource), 0, 16);
+
+        return mb_substr($slug, 0, 100) . '_' . $hash;
+    }
+
+    /**
+     * product_lang has a unique (lang, slug) index.
+     * 1C may contain different products with identical names, so a plain
+     * Str::slug(name) is not sufficient.
+     */
+    private function uniqueProductSlug(Product $product, string $lang, string $source): string
+    {
+        $base = Str::slug($source);
+
+        if ($base === '') {
+            $base = 'product-' . $product->id;
+        }
+
+        // Leave room for suffixes and stay safely below a typical VARCHAR(255).
+        $base = mb_substr($base, 0, 180);
+        $slug = $base;
+
+        $exists = static function (string $candidate) use ($product, $lang): bool {
+            return DB::table('product_lang')
+                ->where('lang', $lang)
+                ->where('slug', $candidate)
+                ->where('product_id', '<>', $product->id)
+                ->exists();
+        };
+
+        if (! $exists($slug)) {
+            return $slug;
+        }
+
+        // Product id makes the suffix deterministic across repeated syncs.
+        $slug = $base . '-' . $product->id;
+
+        if (! $exists($slug)) {
+            return $slug;
+        }
+
+        // Extremely unlikely fallback.
+        return mb_substr($base, 0, 160)
+            . '-' . $product->id
+            . '-' . substr(sha1($product->source . ':' . $product->one_c_id), 0, 8);
     }
 
     private function source(array $data): string

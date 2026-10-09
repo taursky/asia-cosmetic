@@ -10,7 +10,21 @@ class ProductPriceType extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['code', 'name', 'external_id', 'one_c_id', 'sort_order', 'is_active'];
-    protected function casts(): array { return ['is_active' => 'boolean']; }
+    protected $fillable = [
+        'code',
+        'name',
+        'external_id',
+        'one_c_id',
+        'sort_order',
+        'is_active'
+    ];
+
+    protected function casts(): array {
+        return [
+            'is_active' => 'boolean',
+            'sort_order' => 'integer'
+        ];
+    }
+
     public function prices(): HasMany { return $this->hasMany(ProductPrice::class); }
 }

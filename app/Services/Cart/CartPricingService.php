@@ -78,7 +78,7 @@ class CartPricingService
                 'quantity' => $quantity,
                 'stock' => $available,
                 'unit_price' => $amount,
-                'old_price' => $price->old_amount !== null ? (float) $price->old_amount : null,
+                'old_price' => $this->prices->retailOldAmountForVariant($item->variant, $orderRole, $quantity, $amount),
                 'line_total' => $lineTotal,
                 'price_id' => $price->id,
                 'price_type_id' => $price->product_price_type_id,
@@ -86,9 +86,9 @@ class CartPricingService
                 'price_type_name' => $price->priceType?->name,
                 'image' => $item->variant?->images?->first()?->name,
                 'options' => $item->variant?->optionValues?->map(fn ($value): array => [
-                    'name' => $value->option?->lang?->name ?? $value->option?->code,
-                    'value' => $value->lang?->value ?? $value->code,
-                ])->values()->all() ?? [],
+                        'name' => $value->option?->lang?->name ?? $value->option?->code,
+                        'value' => $value->lang?->value ?? $value->code,
+                    ])->values()->all() ?? [],
             ];
         })->values();
 
@@ -152,6 +152,7 @@ class CartPricingService
             'id' => $role->id,
             'name' => $role->name,
             'level' => (int) $role->level,
+            'price_sort_order' => (int) ($role->priceType?->sort_order ?? 0),
             'price_type_id' => $role->product_price_type_id,
             'price_type_code' => $role->priceType?->code,
             'price_type_name' => $role->priceType?->name,

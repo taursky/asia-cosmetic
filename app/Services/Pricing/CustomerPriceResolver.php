@@ -223,6 +223,25 @@ class CustomerPriceResolver
     /**
      * @param Collection<int, array{variant: ProductVariant, quantity: float|int}> $items
      */
+    public function retailOldAmountForVariant(ProductVariant $variant, CustomerRole $role, float $quantity, float $actualAmount): ?float
+    {
+        $retail = $this->retailPriceType();
+        if (! $retail || (int) $role->priceType?->id === (int) $retail->id) {
+            return null;
+        }
+
+        $price = $this->priceQuery($retail->id, $quantity)
+            ->where('product_id', $variant->product_id)
+            ->where('product_variant_id', $variant->id)
+            ->first()
+            ?? $this->priceQuery($retail->id, $quantity)
+                ->where('product_id', $variant->product_id)
+                ->whereNull('product_variant_id')
+                ->first();
+
+        return $price && (float) $price->amount > $actualAmount ? (float) $price->amount : null;
+    }
+
     public function resolveOrderRole(User $user, Collection $items): array
     {
         $baseRole = $this->currentRole($user);
@@ -232,11 +251,11 @@ class CustomerPriceResolver
             ->where('is_active', true)
             ->where('is_auto', true)
             ->whereNotNull('product_price_type_id')
-            ->where('level', '>=', $baseRole->level)
+            ->whereHas('priceType', fn ($query) => $query->where('is_active', true)->where('sort_order', '>=', $baseRole->priceType?->sort_order ?? 0))
             ->whereNotNull('order_threshold_amount')
             ->where('order_threshold_amount', '<=', $baseTotal)
             ->with('priceType')
-            ->orderByDesc('level')
+            ->orderByDesc(ProductPriceType::query()->select('sort_order')->whereColumn('product_price_types.id', 'customer_roles.product_price_type_id')->limit(1))
             ->first() ?? $baseRole;
 
         return [

@@ -24,7 +24,7 @@ class CheckoutService
             throw ValidationException::withMessages(['cart' => 'Корзина пуста.']);
         }
 
-        if (($result['order_role']['level'] ?? 0) > 0) {
+        if (($result['order_role']['price_sort_order'] ?? 0) > ($result['base_role']['price_sort_order'] ?? 0) || ($result['order_role']['price_sort_order'] ?? 0) > 0) {
             $profile = $user->customerProfile;
 
             if (! $profile || $profile->verification_status !== 'verified') {

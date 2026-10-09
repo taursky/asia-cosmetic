@@ -12,9 +12,7 @@ use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(
-        private readonly CatalogPricePresenter $prices,
-    ) {}
+    public function __construct(private readonly CatalogPricePresenter $prices,) {}
 
     public function index(Request $request): View
     {
@@ -76,7 +74,7 @@ class CatalogController extends Controller
         $products = $this->productListingQuery($locale)
             ->whereHas('prices', function ($query)  {
                 //todo: убрать, когда будут цены
-                $query->where('product_price_type_id', 6);
+//                $query->where('product_price_type_id', 6);
             })
             ->whereHas('categories', function ($query) use ($categoryIds) {
                 $query

@@ -56,7 +56,7 @@ class OneCController extends Controller
 
     public function products(BatchRequest $request): JsonResponse
     {
-        Log::warning('1C products', $request->all());
+//        Log::warning('1C products', $request->all());
 
         return $this->batch('products', $request, fn ($items) => $this->catalog->sync($items));
     }

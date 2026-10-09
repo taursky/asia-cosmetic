@@ -63,7 +63,7 @@ class CustomerPriceResolver
 
         $retail = ProductPriceType::query()
             ->where('is_active', true)
-            ->where('code', 'retail')
+            ->whereIn('code', ['retail', '00-000001'])
             ->first();
 
         if ($retail) {
@@ -92,28 +92,18 @@ class CustomerPriceResolver
 
         foreach ($product->variants->where('is_active', true) as $variant) {
             $quote = $this->displayPriceForVariant($variant, $user, $type);
-
             if ($quote['amount'] !== null) {
                 $quotes->push($quote);
             }
         }
 
-        if ($quotes->isEmpty()) {
-            $price = $this->pickLoadedPrice($product->prices, $type->id, 1);
-
-            if (! $price && $type->code !== 'retail') {
-                $retail = $this->retailPriceType();
-                $price = $retail ? $this->pickLoadedPrice($product->prices, $retail->id, 1) : null;
-                $type = $price?->priceType ?: $type;
-            }
-
-            return $this->quotePayload($price, $type, false, null);
+        if ($quotes->isNotEmpty()) {
+            $quote = $quotes->sortBy('amount')->first();
+            $quote['is_from'] = $quotes->pluck('amount')->unique()->count() > 1;
+            return $quote;
         }
 
-        $quote = $quotes->sortBy('amount')->first();
-        $quote['is_from'] = $quotes->pluck('amount')->unique()->count() > 1;
-
-        return $quote;
+        return $this->resolveLoadedPrices($product->prices, collect(), $type, null, 1);
     }
 
     public function displayPriceForVariant(
@@ -122,47 +112,112 @@ class CustomerPriceResolver
         ?ProductPriceType $type = null,
     ): array {
         $type ??= $this->priceTypeFor($user);
+        return $this->resolveLoadedPrices(
+            $variant->prices,
+            $variant->product?->prices ?? collect(),
+            $type,
+            $variant->id,
+            1
+        );
+    }
 
-        $price = $this->pickLoadedPrice($variant->prices, $type->id, 1)
-            ?? $this->pickLoadedPrice($variant->product?->prices ?? collect(), $type->id, 1);
+    private function resolveLoadedPrices(
+        Collection $variantPrices,
+        Collection $productPrices,
+        ProductPriceType $target,
+        ?int $variantId,
+        float $quantity
+    ): array {
+        $retail = $this->retailPriceType();
+        $types = ProductPriceType::query()
+            ->where('is_active', true)
+            ->where('sort_order', '<=', $target->sort_order)
+            ->orderByDesc('sort_order')
+            ->orderByDesc('id')
+            ->get();
 
-        if (! $price && $type->code !== 'retail') {
-            $retail = $this->retailPriceType();
+        // First try the assigned level, then progressively lower levels.
+        foreach ($types as $type) {
+            if ($retail && (int) $type->sort_order === (int) $retail->sort_order && $type->id !== $retail->id) {
+                continue;
+            }
+            $price = $this->pickLoadedPrice($variantPrices, $type->id, $quantity)
+                ?? $this->pickLoadedPrice($productPrices, $type->id, $quantity);
+            if (! $price) {
+                continue;
+            }
 
-            if ($retail) {
-                $price = $this->pickLoadedPrice($variant->prices, $retail->id, 1)
-                    ?? $this->pickLoadedPrice($variant->product?->prices ?? collect(), $retail->id, 1);
+            $quote = $this->quotePayload($price, $type, false, $variantId);
+            $retailPrice = $retail
+                ? ($this->pickLoadedPrice($variantPrices, $retail->id, $quantity)
+                    ?? $this->pickLoadedPrice($productPrices, $retail->id, $quantity))
+                : null;
+            $retailAmount = $retailPrice ? (float) $retailPrice->amount : null;
+            $quote['old_amount'] = $retailAmount !== null
+            && $type->id !== $retail?->id
+            && $retailAmount > (float) $price->amount
+                ? $retailAmount : null;
+            return $quote;
+        }
 
-                if ($price) {
-                    $type = $retail;
-                }
+        // Explicit retail fallback even if its sort_order is configured unusually.
+        if ($retail) {
+            $price = $this->pickLoadedPrice($variantPrices, $retail->id, $quantity)
+                ?? $this->pickLoadedPrice($productPrices, $retail->id, $quantity);
+            if ($price) {
+                $quote = $this->quotePayload($price, $retail, false, $variantId);
+                $quote['old_amount'] = null;
+                return $quote;
             }
         }
 
-        return $this->quotePayload($price, $type, false, $variant->id);
+        return $this->quotePayload(null, $target, false, $variantId);
     }
 
-    public function priceForVariant(ProductVariant $variant, CustomerRole $role, float $quantity = 1,): ?ProductPrice
+    public function priceForVariant(ProductVariant $variant, CustomerRole $role, float $quantity = 1): ?ProductPrice
     {
-        $priceTypeId = $role->product_price_type_id;
-
-        if (! $priceTypeId) {
+        $target = $role->priceType;
+        if (! $target || ! $target->is_active) {
             return null;
         }
 
-        $price = $this->priceQuery($priceTypeId, $quantity)
-            ->where('product_id', $variant->product_id)
-            ->where('product_variant_id', $variant->id)
-            ->first();
+        $types = ProductPriceType::query()
+            ->where('is_active', true)
+            ->where('sort_order', '<=', $target->sort_order)
+            ->orderByDesc('sort_order')
+            ->orderByDesc('id')
+            ->get();
 
-        if ($price) {
-            return $price;
+        $retail = $this->retailPriceType();
+        foreach ($types as $type) {
+            if ($retail && (int) $type->sort_order === (int) $retail->sort_order && $type->id !== $retail->id) {
+                continue;
+            }
+            $price = $this->priceQuery($type->id, $quantity)
+                ->where('product_id', $variant->product_id)
+                ->where('product_variant_id', $variant->id)
+                ->first()
+                ?? $this->priceQuery($type->id, $quantity)
+                    ->where('product_id', $variant->product_id)
+                    ->whereNull('product_variant_id')
+                    ->first();
+            if ($price) {
+                return $price;
+            }
         }
 
-        return $this->priceQuery($priceTypeId, $quantity)
+        $retail = $this->retailPriceType();
+        if (! $retail) {
+            return null;
+        }
+        return $this->priceQuery($retail->id, $quantity)
             ->where('product_id', $variant->product_id)
-            ->whereNull('product_variant_id')
-            ->first();
+            ->where('product_variant_id', $variant->id)
+            ->first()
+            ?? $this->priceQuery($retail->id, $quantity)
+                ->where('product_id', $variant->product_id)
+                ->whereNull('product_variant_id')
+                ->first();
     }
 
     /**
@@ -271,9 +326,19 @@ class CustomerPriceResolver
 
     private function retailPriceType(): ?ProductPriceType
     {
+        $default = CustomerRole::query()
+            ->where('is_active', true)
+            ->where('is_default', true)
+            ->with('priceType')
+            ->first();
+        if ($default?->priceType?->is_active) {
+            return $default->priceType;
+        }
+
         return ProductPriceType::query()
             ->where('is_active', true)
-            ->where('code', 'retail')
+            ->whereIn('code', ['retail', '00-000001'])
+            ->orderBy('sort_order')
             ->first();
     }
 }

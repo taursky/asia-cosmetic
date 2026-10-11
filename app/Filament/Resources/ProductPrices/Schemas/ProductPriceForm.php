@@ -14,7 +14,7 @@ class ProductPriceForm
         return $schema->components([
             Section::make('Цена')->schema([
                 Select::make('product_id')->relationship('product', 'sku')->label('Товар')->searchable()->preload()->required(),
-                Select::make('option_id')->relationship('option', 'sku')->label('Опция / SKU')->searchable()->preload()->placeholder('Базовая цена товара'),
+                Select::make('option_id')->relationship('variant', 'sku')->label('Опция / SKU')->searchable()->preload()->placeholder('Базовая цена товара'),
                 Select::make('product_price_type_id')->relationship('priceType', 'name')->label('Тип цены')->searchable()->preload()->required(),
                 TextInput::make('amount')->label('Цена')->numeric()->step(0.01)->required(),
                 TextInput::make('old_amount')->label('Старая цена')->numeric()->step(0.01),

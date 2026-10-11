@@ -18,8 +18,13 @@ class ProductPricesTable
                 ->label('Товар')
                 ->width(50)
                 ->limit(40)
+//                ->searchable(query: function ($query, string $search) {
+//                    $query->orWhereHas('variant', function ($q) use ($search) {
+//                        $q->where('sku', 'like', "%{$search}%");
+//                    });
+//                })
                 ->searchable(),
-            TextColumn::make('option.sku')
+            TextColumn::make('variant.sku')
                 ->label('SKU')
                 ->placeholder('—')
                 ->searchable(),

@@ -36,6 +36,7 @@
                 </svg>
             </a>-->
             @include('block.cart-button-vue')
+{{--            <a href="{{route('cart.index')}}">K</a>--}}
 
             @include('block.auth-dropdown')
         </div>

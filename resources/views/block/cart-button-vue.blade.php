@@ -1,1 +1,1 @@
-<div data-vue-component="CartButton" data-props="{}"></div>
+<div data-vue-component="CartHeaderLink" data-props="{}"></div>

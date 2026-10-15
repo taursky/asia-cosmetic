@@ -5,6 +5,7 @@ export const cartStore = reactive({
     loading: false,
     loaded: false,
     items: [],
+    selectedItemIds: [],
     total: 0,
     subtotal: 0,
     discountAmount: 0,
@@ -26,6 +27,7 @@ export const cartStore = reactive({
         this.baseRole = payload.base_role || null
         this.orderRole = payload.order_role || null
         this.loaded = true
+        syncCartSelection()
     },
 })
 
@@ -96,17 +98,78 @@ export async function addToCart(variantId, quantity = 1) {
 
 export async function updateCartItem(itemId, quantity) {
     cartStore.loading = true
-    cartStore.apply(await request(`/api/cart/items/${itemId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ quantity }),
-    }))
-    cartStore.loading = false
+    cartStore.error = null
+
+    try {
+        const payload = await request(`/api/cart/items/${itemId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ quantity }),
+        })
+
+        cartStore.apply(payload)
+        return true
+    } catch (error) {
+        if (error.message !== 'AUTH_REQUIRED') {
+            cartStore.error = error.message
+        }
+        return false
+    } finally {
+        cartStore.loading = false
+    }
 }
 
 export async function removeCartItem(itemId) {
     cartStore.loading = true
-    cartStore.apply(await request(`/api/cart/items/${itemId}`, {
-        method: 'DELETE',
-    }))
-    cartStore.loading = false
+    cartStore.error = null
+
+    try {
+        const payload = await request(`/api/cart/items/${itemId}`, {
+            method: 'DELETE',
+        })
+
+        cartStore.apply(payload)
+        return true
+    } catch (error) {
+        if (error.message !== 'AUTH_REQUIRED') {
+            cartStore.error = error.message
+        }
+        return false
+    } finally {
+        cartStore.loading = false
+    }
+}
+
+export function toggleCartItemSelection(itemId) {
+    const id = Number(itemId)
+
+    if (cartStore.selectedItemIds.includes(id)) {
+        cartStore.selectedItemIds = cartStore.selectedItemIds.filter(
+            selectedId => selectedId !== id
+        )
+    } else {
+        cartStore.selectedItemIds = [
+            ...cartStore.selectedItemIds,
+            id,
+        ]
+    }
+}
+
+export function selectAllCartItems() {
+    cartStore.selectedItemIds = cartStore.items.map(
+        item => Number(item.id)
+    )
+}
+
+export function clearCartSelection() {
+    cartStore.selectedItemIds = []
+}
+
+export function syncCartSelection() {
+    const existingIds = new Set(
+        cartStore.items.map(item => Number(item.id))
+    )
+
+    cartStore.selectedItemIds = cartStore.selectedItemIds.filter(
+        id => existingIds.has(id)
+    )
 }

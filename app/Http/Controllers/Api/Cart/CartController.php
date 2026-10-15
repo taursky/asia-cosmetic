@@ -9,13 +9,11 @@ use App\Services\Cart\CartPricingService;
 use App\Services\Cart\CartService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class CartController extends Controller
 {
-    public function __construct(
-        private readonly CartService $carts,
-        private readonly CartPricingService $pricing,
-    ) {}
+    public function __construct(private readonly CartService $carts, private readonly CartPricingService $pricing,) {}
 
     public function show(Request $request): JsonResponse
     {
@@ -78,6 +76,34 @@ class CartController extends Controller
 
         return response()->json(
             $this->pricing->calculate($cart)
+        );
+    }
+
+    public function previewSelection(Request $request)
+    {
+        $validated = $request->validate([
+            'item_ids' => ['required', 'array', 'min:1'],
+            'item_ids.*' => ['required', 'integer', 'distinct', 'min:1'],
+        ]);
+
+        $cart = $this->carts->cartFor($request->user());
+
+        $selectedIds = array_map('intval', $validated['item_ids']);
+
+        $existingIds = $cart->items()
+            ->whereIn('id', $selectedIds)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (count($existingIds) !== count($selectedIds)) {
+            throw ValidationException::withMessages([
+                'item_ids' => 'Некоторые выбранные товары отсутствуют в вашей корзине.',
+            ]);
+        }
+
+        return response()->json(
+            $this->pricing->calculate($cart, $selectedIds)
         );
     }
 }

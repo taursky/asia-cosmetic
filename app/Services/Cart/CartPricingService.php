@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\CustomerRole;
 use App\Services\Pricing\CustomerPriceResolver;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class CartPricingService
 {
@@ -13,13 +14,25 @@ class CartPricingService
         private readonly CustomerPriceResolver $prices,
     ) {}
 
-    public function calculate(Cart $cart): array
+    public function calculate(Cart $cart, ?array $selectedItemIds = null): array
     {
         $this->loadCart($cart);
         $this->removeInvalidItems($cart);
         $this->loadCart($cart, true);
 
-        if ($cart->items->isEmpty()) {
+        $items = $cart->items;
+
+        if ($selectedItemIds !== null) {
+            $selectedIds = collect($selectedItemIds)
+                ->map(fn ($id) => (int) $id)
+                ->unique();
+
+            $items = $items
+                ->filter(fn ($item) => $selectedIds->contains((int) $item->id))
+                ->values();
+        }
+
+        if ($items->isEmpty()) {
             return [
                 'items' => [],
                 'base_role' => null,
@@ -32,7 +45,7 @@ class CartPricingService
             ];
         }
 
-        $pricingItems = $cart->items->map(fn ($item): array => [
+        $pricingItems = $items->map(fn ($item): array => [
             'variant' => $item->variant,
             'quantity' => (float) $item->quantity,
         ]);
@@ -47,7 +60,7 @@ class CartPricingService
         $baseRole->loadMissing('priceType');
         $orderRole->loadMissing('priceType');
 
-        $lines = $cart->items->map(function ($item) use ($orderRole): array {
+        $lines = $items->map(function ($item) use ($orderRole): array {
             $quantity = (float) $item->quantity;
             $available = (float) $item->variant->stock;
 
@@ -84,7 +97,14 @@ class CartPricingService
                 'price_type_id' => $price->product_price_type_id,
                 'price_type_code' => $price->priceType?->code,
                 'price_type_name' => $price->priceType?->name,
-                'image' => $item->variant?->images?->first()?->name,
+                'image' => ($imagePath = (
+                    $item->variant?->images?->first()?->name
+                    ?? $item->variant?->product?->images?->first()?->name
+                ))
+                    ? (filter_var($imagePath, FILTER_VALIDATE_URL)
+                        ? $imagePath
+                        : Storage::disk('public')->url($imagePath))
+                    : null,
                 'options' => $item->variant?->optionValues?->map(fn ($value): array => [
                         'name' => $value->option?->lang?->name ?? $value->option?->code,
                         'value' => $value->lang?->value ?? $value->code,
@@ -118,7 +138,7 @@ class CartPricingService
             'items.product.lang',
             'items.product.prices.priceType',
             'items.variant.lang',
-            'items.variant.images',
+            'items.variant.product.images',
             'items.variant.prices.priceType',
             'items.variant.optionValues.option.lang',
             'items.variant.optionValues.lang',

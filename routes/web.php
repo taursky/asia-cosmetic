@@ -92,11 +92,33 @@ Route::middleware('auth:web')->group(function (): void {
         Route::post('/items', [CartController::class, 'store'])->name('items.store');
         Route::patch('/items/{item}', [CartController::class, 'update'])->name('items.update');
         Route::delete('/items/{item}', [CartController::class, 'destroy'])->name('items.destroy');
+        Route::post('/selection/preview', [CartController::class, 'previewSelection'])
+            ->name('selection.preview');
     });
+    Route::view('/cart', 'cart.index')->name('cart.index');
 
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout/select-items', [CheckoutController::class, 'selectItems'])
+        ->name('checkout.select-items');
+
     Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/payment/{session}', [CheckoutController::class, 'payment'])
+        ->name('checkout.payment');
+    if (app()->environment(['local', 'testing'])) {
+        Route::post('/checkout/payment/{session}/mock-success', [
+            CheckoutController::class,
+            'mockPaymentSuccess',
+        ])
+            ->middleware('throttle:5,1')
+            ->name('checkout.payment.mock-success');
+        Route::post(
+            '/checkout/payment/{session}/mock-failure',
+            [CheckoutController::class, 'mockPaymentFailure']
+        )
+            ->middleware('throttle:10,1')
+            ->name('checkout.payment.mock-failure');
+    }
     //Скачать документ
     Route::get('/account/documents/{document}', [AccountDocumentsController::class, 'download'])
         ->name('account.documents.download');

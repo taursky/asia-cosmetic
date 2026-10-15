@@ -8,7 +8,8 @@ import HomeHero from './components/HomeHero.vue'
 import AddToCartButton from "./cart/AddToCartButton.vue";
 import CartButton from "./cart/CartButton.vue";
 import CartDrawer from "./cart/CartDrawer.vue";
-
+import CartPage from './cart/CartPage.vue';
+import CartHeaderLink from './cart/CartHeaderLink.vue'
 
 const components = {
     Counter,
@@ -17,6 +18,8 @@ const components = {
     AddToCartButton,
     CartButton,
     CartDrawer,
+    CartPage,
+    CartHeaderLink,
 }
 
 document.querySelectorAll('[data-vue-component]').forEach((element) => {

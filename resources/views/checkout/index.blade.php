@@ -22,7 +22,9 @@
                     <div class="mt-4 text-sm text-zinc-600">{{ $user->name }}</div>
                     <div class="text-sm text-zinc-500">{{ $user->email ?: $user->phone }}</div>
 
-                    @if(($cart['order_role']['level'] ?? 0) > 0 && (!$user->customerProfile || $user->customerProfile->verification_status !== 'verified'))
+                    {{-- || $user->customerProfile->verification_status !== 'verified' --}}
+
+                    @if(($cart['order_role']['level'] ?? 0) > 0 && (!$user->customerProfile ))
                         <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                             Для оптового заказа требуется подтверждение реквизитов.
                             <a href="{{ route('account.index') }}" class="font-semibold underline">Заполнить реквизиты</a>
@@ -51,14 +53,17 @@
                     <h2 class="text-lg font-semibold">Оплата</h2>
 
                     <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                        <label class="rounded-2xl border border-zinc-200 p-4">
-                            <input type="radio" name="payment_method" value="invoice" @checked(old('payment_method', 'invoice') === 'invoice')>
-                            <span class="ml-2 text-sm font-medium">Счёт на оплату</span>
-                        </label>
-                        <label class="rounded-2xl border border-zinc-200 p-4">
-                            <input type="radio" name="payment_method" value="card" @checked(old('payment_method') === 'card')>
-                            <span class="ml-2 text-sm font-medium">Банковская карта</span>
-                        </label>
+                        @if($user->customerProfile->legal_type === 'legal_entity' || $user->customerProfile->legal_type === 'individual_entrepreneur')
+                            <label class="rounded-2xl border border-zinc-200 p-4">
+                                <input type="radio" name="payment_method" value="invoice" @checked(old('payment_method', 'invoice') === 'invoice')>
+                                <span class="ml-2 text-sm font-medium">Счёт на оплату</span>
+                            </label>
+                        @else
+                            <label class="rounded-2xl border border-zinc-200 p-4">
+                                <input type="radio" name="payment_method" value="card" @checked(old('payment_method') === 'card') checked>
+                                <span class="ml-2 text-sm font-medium">Банковская карта</span>
+                            </label>
+                        @endif
                     </div>
 
                     <textarea name="comment" rows="3" placeholder="Комментарий" class="mt-4 w-full rounded-xl border-zinc-200">{{ old('comment') }}</textarea>

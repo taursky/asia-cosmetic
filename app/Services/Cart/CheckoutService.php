@@ -136,6 +136,15 @@ class CheckoutService
             if ($isLegal) {
                 $order = $this->orders->createInvoiceOrder($snapshot);
 
+                $cartItemIds = array_column(
+                    array_column($snapshot['items'], 'meta'),
+                    'cart_item_id'
+                );
+
+                $cart->items()
+                    ->whereIn('id', $cartItemIds)
+                    ->delete();
+
                 return $order;
             }
 

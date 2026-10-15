@@ -8,7 +8,7 @@
 <h1 class="text-2xl font-semibold">Подтверждение телефона</h1>
 <p class="mt-2 text-sm text-zinc-500">Введите код, отправленный на {{ $phone }}.</p>
 @if(session('status'))<div class="mt-4 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-700">{{ session('status') }}</div>@endif
-<form method="post" action="{{ $purpose === 'register' ? route('register.phone.verify') : route('auth.phone.verify') }}" class="mt-6 space-y-4">
+<form method="post" action="{{ $purpose === 'register' ? route('register.phone.verify') : route('login.phone.verify') }}" class="mt-6 space-y-4">
     @csrf
     <input name="code" inputmode="numeric" maxlength="6" placeholder="000000" class="w-full rounded-xl border-zinc-300 text-center text-2xl tracking-[.35em]" required autofocus>
     @error('code')<div class="text-sm text-rose-600">{{ $message }}</div>@enderror

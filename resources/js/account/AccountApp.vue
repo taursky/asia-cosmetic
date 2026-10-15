@@ -4,6 +4,7 @@ import AccountOverview from './components/AccountOverview.vue'
 import PersonalData from './components/PersonalData.vue'
 import CompanyDetails from './components/CompanyDetails.vue'
 import AccountDocuments from './components/AccountDocuments.vue'
+import AccountOrders from './components/AccountOrders.vue'
 
 const section = ref('overview')
 
@@ -36,6 +37,7 @@ const sections = [
             <AccountOverview v-if="section === 'overview'" />
             <PersonalData v-else-if="section === 'personal'" />
             <CompanyDetails v-else-if="section === 'company'" />
+            <AccountOrders v-else-if="section === 'orders'" />
             <AccountDocuments v-else-if="section === 'documents'" />
             <div v-else class="py-10 text-sm text-zinc-500">Раздел будет подключён к соответствующему API.</div>
         </main>

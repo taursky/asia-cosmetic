@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\User;
 use App\Services\Auth\AccountEmailVerificationService;
 use App\Services\Auth\PhoneCodeService;
 use App\Services\Auth\PhoneNormalizer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -34,11 +36,8 @@ class AccountController extends Controller
         return back()->with('success', 'Профиль обновлён.');
     }
 
-    public function sendPhoneCode(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): RedirectResponse {
+    public function sendPhoneCode(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes): RedirectResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
         ]);
@@ -67,11 +66,8 @@ class AccountController extends Controller
             ->with('success', 'Код подтверждения отправлен.');
     }
 
-    public function verifyPhone(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): RedirectResponse {
+    public function verifyPhone(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes): RedirectResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
             'code' => ['required', 'digits_between:4,8'],
@@ -106,10 +102,8 @@ class AccountController extends Controller
             ->with('success', 'Телефон подтверждён. Теперь вы можете входить по SMS.');
     }
 
-    public function sendEmailVerification(
-        Request $request,
-        AccountEmailVerificationService $verification,
-    ): RedirectResponse {
+    public function sendEmailVerification(Request $request, AccountEmailVerificationService $verification): RedirectResponse
+    {
         $data = $request->validate([
             'email' => ['required', 'email:rfc', 'max:255'],
         ]);
@@ -122,11 +116,8 @@ class AccountController extends Controller
         );
     }
 
-    public function verifyEmail(
-        Request $request,
-        string $token,
-        AccountEmailVerificationService $verification,
-    ): RedirectResponse {
+    public function verifyEmail(Request $request, string $token, AccountEmailVerificationService $verification): RedirectResponse
+    {
         $email = $verification->verify($request->user(), $token);
 
         return redirect()
@@ -159,5 +150,54 @@ class AccountController extends Controller
                 ? 'Пароль сохранён.'
                 : 'Пароль обновлён.',
         );
+    }
+
+    public function orders(Request $request): JsonResponse
+    {
+        $orders = Order::query()
+            ->where('user_id', $request->user()->id)
+            ->select([
+                'id',
+                'number',
+                'created_at',
+                'status',
+                'payment_status',
+                'currency',
+                'total',
+            ])
+            ->withCount('items')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->paginate(10);
+
+        return response()->json($orders);
+    }
+
+    public function order(Request $request, int $orderId): JsonResponse
+    {
+        $order = Order::query()
+            ->where('user_id', $request->user()->id)
+            ->with('items')
+            ->findOrFail($orderId);
+
+        return response()->json([
+            'id' => $order->id,
+            'number' => $order->number,
+            'created_at' => $order->created_at,
+            'status' => $order->status,
+            'payment_status' => $order->payment_status,
+            'currency' => $order->currency,
+            'subtotal' => $order->subtotal,
+            'total' => $order->total,
+            'items' => $order->items->map(fn ($item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'sku' => $item->sku,
+                'image' => data_get($item->meta, 'image'),
+                'quantity' => $item->quantity,
+                'price' => $item->price,
+                'total' => $item->total,
+            ])->values(),
+        ]);
     }
 }

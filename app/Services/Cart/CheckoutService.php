@@ -122,6 +122,7 @@ class CheckoutService
                 'meta' => [
                     'cart_item_id' => $line['id'],
                     'cart_item_quantity' => $line['quantity'],
+                    'image' => $line['image'] ?? null,
                     'product_price_id' => $line['price_id'],
                     'customer_role_id' => $result['order_role']['id'],
                     'product_price_type_id' => $line['price_type_id'],

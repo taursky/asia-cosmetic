@@ -67,6 +67,10 @@ Route::middleware('auth:web')
 
         Route::put('/password', [AccountController::class, 'updatePassword'])
             ->name('password.update');
+
+        Route::get('/api/orders/{orderId}', [AccountController::class, 'order'])
+            ->whereNumber('orderId')
+            ->name('account.api.orders.show');
     });
 
 Route::post('/logout', [CustomerLoginController::class, 'destroy'])
@@ -159,4 +163,7 @@ Route::middleware('auth:web')
         Route::get('/bank/by-bik', [ApiFnsController::class, 'bankByBik'])
             ->middleware('throttle:30,1')
             ->name('bank.by-bik');
+
+        Route::get('/orders', [AccountController::class, 'orders'])
+            ->name('account.api.orders');
     });

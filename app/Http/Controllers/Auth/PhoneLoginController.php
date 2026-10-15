@@ -15,11 +15,8 @@ use InvalidArgumentException;
 
 class PhoneLoginController extends Controller
 {
-    public function send(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): RedirectResponse {
+    public function send(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes): RedirectResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
             'remember' => ['nullable', 'boolean'],
@@ -69,11 +66,11 @@ class PhoneLoginController extends Controller
 
     public function verifyForm(Request $request): View
     {
-//        $purpose = Auth::user()?'register': null;
+        $purpose = Auth::user()?'register': null;
 
         return view('auth.phone-verify', [
             'phone' => session('phone'),
-//            'purpose' => $purpose,
+            'purpose' => $purpose,
         ]);
     }
 

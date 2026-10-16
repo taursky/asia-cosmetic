@@ -66,11 +66,9 @@ class PhoneLoginController extends Controller
 
     public function verifyForm(Request $request): View
     {
-        $purpose = Auth::user()?'register': null;
-
         return view('auth.phone-verify', [
-            'phone' => session('phone'),
-            'purpose' => $purpose,
+            'phone' => $request->session()->get('phone'),
+            'purpose' => 'login',
         ]);
     }
 

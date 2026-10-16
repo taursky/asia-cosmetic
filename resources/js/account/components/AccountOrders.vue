@@ -25,6 +25,21 @@ const paymentStatuses = {
 const currentPage = ref(1)
 const lastPage = ref(1)
 const totalOrders = ref(0)
+const activeFilter = ref('all')
+
+const orderFilters = [
+    { value: 'all', label: 'Все' },
+    { value: 'unpaid', label: 'Ожидают оплаты' },
+    { value: 'paid', label: 'Оплачены' },
+    { value: 'cancelled', label: 'Отменены' },
+]
+
+function changeFilter(filter) {
+    if (activeFilter.value === filter) return
+
+    activeFilter.value = filter
+    loadOrders(1)
+}
 
 function formatPrice(value) {
     return new Intl.NumberFormat('ru-RU', {
@@ -69,7 +84,7 @@ async function loadOrders(page = 1) {
 
     try {
         const response = await fetch(
-            `/account/api/orders?page=${page}`,
+            `/account/api/orders?page=${page}&filter=${activeFilter.value}`,
             {
                 credentials: 'same-origin',
                 headers: { Accept: 'application/json' },
@@ -137,6 +152,26 @@ onMounted(loadOrders)
             Мои заказы
         </h2>
 
+        <div class="mb-6 flex flex-wrap gap-2">
+            <button
+                v-for="filter in orderFilters"
+                :key="filter.value"
+                type="button"
+                :disabled="loading"
+                class="rounded-full border px-4 py-2 text-sm font-medium transition disabled:opacity-50"
+                :class="
+            activeFilter === filter.value
+                ? 'border-zinc-900 bg-zinc-900 text-white'
+                : 'border-zinc-200 bg-white text-zinc-600 hover:border-zinc-400'
+        "
+                @click="changeFilter(filter.value)"
+            >
+                {{ filter.label }}
+            </button>
+        </div>
+
+
+
         <p v-if="loading" class="text-zinc-500">
             Загружаем заказы...
         </p>
@@ -146,7 +181,11 @@ onMounted(loadOrders)
         </p>
 
         <p v-else-if="!orders.length" class="text-zinc-500">
-            У вас пока нет заказов.
+            {{
+                activeFilter === 'all'
+                    ? 'У вас пока нет заказов.'
+                    : 'По выбранному фильтру заказов не найдено.'
+            }}
         </p>
 
         <div v-else class="space-y-4">

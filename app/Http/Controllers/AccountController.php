@@ -154,7 +154,11 @@ class AccountController extends Controller
 
     public function orders(Request $request): JsonResponse
     {
-        $orders = Order::query()
+        $filter = $request->validate([
+            'filter' => ['sometimes', 'in:all,unpaid,paid,cancelled'],
+        ])['filter'] ?? 'all';
+
+        $orders = \App\Models\Order::query()
             ->where('user_id', $request->user()->id)
             ->select([
                 'id',
@@ -165,12 +169,30 @@ class AccountController extends Controller
                 'currency',
                 'total',
             ])
-            ->withCount('items')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->paginate(10);
+            ->withCount('items');
 
-        return response()->json($orders);
+        switch ($filter) {
+            case 'unpaid':
+                $orders->where('payment_status', 'pending')
+                    ->where('status', '!=', 'cancelled');
+                break;
+
+            case 'paid':
+                $orders->where('payment_status', 'paid');
+                break;
+
+            case 'cancelled':
+                $orders->where('status', 'cancelled');
+                break;
+        }
+
+        return response()->json(
+            $orders
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->paginate(10)
+                ->withQueryString()
+        );
     }
 
     public function order(Request $request, int $orderId): JsonResponse

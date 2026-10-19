@@ -114,6 +114,8 @@ class CheckoutService
             'items' => array_map(fn (array $line): array => [
                 'product_id' => $line['product_id'],
                 'product_variant_id' => $line['variant_id'],
+                'product_one_c_id' => $line['product_one_c_id'] ?? null,
+                'variant_one_c_id' => $line['variant_one_c_id'] ?? null,
                 'sku' => $line['sku'],
                 'name' => $line['product_name'] ?: $line['variant_name'] ?: $line['sku'],
                 'quantity' => $line['quantity'],

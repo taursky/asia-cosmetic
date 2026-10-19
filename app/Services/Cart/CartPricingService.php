@@ -85,6 +85,8 @@ class CartPricingService
                 'id' => $item->id,
                 'product_id' => $item->product_id,
                 'variant_id' => $item->product_variant_id,
+                'product_one_c_id' => $item->product?->one_c_id,
+                'variant_one_c_id' => $item->variant?->one_c_id,
                 'product_name' => $item->product?->lang?->name,
                 'variant_name' => $item->variant?->lang?->name,
                 'sku' => $item->variant?->sku,

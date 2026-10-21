@@ -167,3 +167,8 @@ Route::middleware('auth:web')
         Route::get('/orders', [AccountController::class, 'orders'])
             ->name('account.api.orders');
     });
+
+Route::prefix('/info')->group(function () {
+    Route::get('page/{slugOrId}', [HomeController::class, 'show'])
+        ->where('slugOrId', '[A-Za-z0-9_-]+')->name('info.page');
+});

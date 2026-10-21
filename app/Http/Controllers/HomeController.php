@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\StaticPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class HomeController extends Controller
 {
@@ -97,5 +101,38 @@ class HomeController extends Controller
             'newProducts',
             'heroSlides',
         ));
+    }
+
+    /**
+     * @param Request $request
+     * @param string $slugOrId
+     * @return \Illuminate\Contracts\View\Factory|View
+     */
+    public function show(Request $request, string $slugOrId)
+    {
+        $validated = $request->validate([
+            'lang' => ['sometimes', 'string', Rule::in(['ru', 'en', 'ja', 'zh'])],
+        ]);
+
+        $lang = $validated['lang'] ?? app()->getLocale();
+
+        $page = StaticPage::query()
+            ->active()
+            ->with('langs')
+            ->where(function ($query) use ($slugOrId, $lang) {
+                if (ctype_digit($slugOrId)) {
+                    $query->whereKey((int) $slugOrId);
+                    return;
+                }
+                $query->where('slug', $slugOrId)
+                    ->orWhereHas('langs', fn ($t) => $t
+                        ->where('lang', $lang)
+                        ->where('slug', $slugOrId));
+            })
+            ->firstOrFail();
+
+        $translation = $page->translation($lang) ?? abort(404);
+
+        return view('content.static-page', compact('translation'));
     }
 }

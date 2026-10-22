@@ -154,4 +154,24 @@ class OneCController extends Controller
             empty($errors) ? 200 : 207,
         );
     }
+
+    public function orderInvoice(Request $request, Order $order): JsonResponse
+    {
+        $validated = $request->validate([
+            'invoice' => [
+                'required',
+                'file',
+                'mimes:pdf',
+                'max:10240',
+            ],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'PDF успешно получен и проверен',
+            'order_uuid' => $order->uuid,
+            'filename' => $validated['invoice']->getClientOriginalName(),
+            'size' => $validated['invoice']->getSize(),
+        ]);
+    }
 }

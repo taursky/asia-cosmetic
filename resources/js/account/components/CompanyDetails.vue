@@ -194,7 +194,6 @@ function applyOfficialMismatch(item) {
     if (item?.field && item.field in form) form[item.field] = item.official ?? ''
 }
 
-
 function lookupBankByBik() {
     clearTimeout(bankTimer)
     bankMessage.value = ''
@@ -281,7 +280,7 @@ async function save() {
         <div v-if="form.verification_comment" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {{ form.verification_comment }}
         </div>
-
+        <!-- todo убрать после подтверждения -->
         <section class="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -338,7 +337,7 @@ async function save() {
                 </div>
             </div>
         </section>
-
+        <!-- todo  закрепить после подтверждения-->
         <section class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Правовой статус</h3>
             <div class="mt-4">
@@ -351,24 +350,56 @@ async function save() {
                 <p v-if="firstError('legal_type')" class="mt-1.5 text-xs text-red-600">{{ firstError('legal_type') }}</p>
             </div>
         </section>
-
+        <!-- todo  закрепить после подтверждения-->
         <section v-if="isBusiness" class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Организация</h3>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Краткое наименование</label><input v-model="form.company_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ООО Азия Косметик"><p v-if="firstError('company_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('company_name') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Полное наименование</label><input v-model="form.full_company_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Общество с ограниченной ответственностью ..."><p v-if="firstError('full_company_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('full_company_name') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">ИНН</label><input v-model="form.inn" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ИНН"><p v-if="firstError('inn')" class="mt-1.5 text-xs text-red-600">{{ firstError('inn') }}</p></div>
-                <div v-if="isLegalEntity"><label class="mb-1.5 block text-sm font-medium text-zinc-700">КПП</label><input v-model="form.kpp" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="КПП"><p v-if="firstError('kpp')" class="mt-1.5 text-xs text-red-600">{{ firstError('kpp') }}</p></div>
-                <div v-if="isLegalEntity"><label class="mb-1.5 block text-sm font-medium text-zinc-700">ОГРН</label><input v-model="form.ogrn" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ОГРН"><p v-if="firstError('ogrn')" class="mt-1.5 text-xs text-red-600">{{ firstError('ogrn') }}</p></div>
-                <div v-if="isIp"><label class="mb-1.5 block text-sm font-medium text-zinc-700">ОГРНИП</label><input v-model="form.ogrnip" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ОГРНИП"><p v-if="firstError('ogrnip')" class="mt-1.5 text-xs text-red-600">{{ firstError('ogrnip') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Краткое наименование</label>
+                    <input v-model="form.company_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ООО Азия Косметик">
+                    <p v-if="firstError('company_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('company_name') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Полное наименование</label>
+                    <input v-model="form.full_company_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Общество с ограниченной ответственностью ...">
+                    <p v-if="firstError('full_company_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('full_company_name') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">ИНН</label>
+                    <input v-model="form.inn" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ИНН">
+                    <p v-if="firstError('inn')" class="mt-1.5 text-xs text-red-600">{{ firstError('inn') }}</p>
+                </div>
+                <div v-if="isLegalEntity">
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">КПП</label>
+                    <input v-model="form.kpp" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="КПП">
+                    <p v-if="firstError('kpp')" class="mt-1.5 text-xs text-red-600">{{ firstError('kpp') }}</p>
+                </div>
+                <div v-if="isLegalEntity">
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">ОГРН</label>
+                    <input v-model="form.ogrn" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ОГРН">
+                    <p v-if="firstError('ogrn')" class="mt-1.5 text-xs text-red-600">{{ firstError('ogrn') }}</p>
+                </div>
+                <div v-if="isIp">
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">ОГРНИП</label>
+                    <input v-model="form.ogrnip" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ОГРНИП">
+                    <p v-if="firstError('ogrnip')" class="mt-1.5 text-xs text-red-600">{{ firstError('ogrnip') }}</p>
+                </div>
             </div>
         </section>
 
         <section v-if="isBusiness" class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Адреса</h3>
             <div class="mt-4 grid gap-4">
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Юридический адрес</label><textarea v-model="form.legal_address" rows="2" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Юридический адрес"></textarea><p v-if="firstError('legal_address')" class="mt-1.5 text-xs text-red-600">{{ firstError('legal_address') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Фактический адрес</label><textarea v-model="form.actual_address" rows="2" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Фактический адрес"></textarea><p v-if="firstError('actual_address')" class="mt-1.5 text-xs text-red-600">{{ firstError('actual_address') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Юридический адрес</label>
+                    <textarea v-model="form.legal_address" rows="2" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Юридический адрес"></textarea>
+                    <p v-if="firstError('legal_address')" class="mt-1.5 text-xs text-red-600">{{ firstError('legal_address') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Фактический адрес</label>
+                    <textarea v-model="form.actual_address" rows="2" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Фактический адрес"></textarea>
+                    <p v-if="firstError('actual_address')" class="mt-1.5 text-xs text-red-600">{{ firstError('actual_address') }}</p>
+                </div>
             </div>
         </section>
 
@@ -393,25 +424,54 @@ async function save() {
                     <p v-if="firstError('bank_bik')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_bik') }}</p>
                     <p v-if="bankMessage" class="mt-1.5 text-xs text-zinc-500">{{ bankMessage }}</p>
                 </div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Расчётный счёт</label><input v-model="form.bank_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр"><p v-if="firstError('bank_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_account') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Корреспондентский счёт</label><input v-model="form.bank_corr_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр"><p v-if="firstError('bank_corr_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_corr_account') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Расчётный счёт</label>
+                    <!-- todo обязательное поле -->
+                    <input v-model="form.bank_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр">
+                    <p v-if="firstError('bank_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_account') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Корреспондентский счёт</label>
+                    <input v-model="form.bank_corr_account" inputmode="numeric" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="20 цифр">
+                    <p v-if="firstError('bank_corr_account')" class="mt-1.5 text-xs text-red-600">{{ firstError('bank_corr_account') }}</p>
+                </div>
             </div>
         </section>
 
         <section v-if="isBusiness" class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Руководитель / подписант</h3>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">ФИО</label><input v-model="form.director_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Иванов Иван Иванович"><p v-if="firstError('director_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('director_name') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Должность</label><input v-model="form.director_position" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Генеральный директор"><p v-if="firstError('director_position')" class="mt-1.5 text-xs text-red-600">{{ firstError('director_position') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">ФИО</label>
+                    <input v-model="form.director_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Иванов Иван Иванович">
+                    <p v-if="firstError('director_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('director_name') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Должность</label>
+                    <input v-model="form.director_position" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="Генеральный директор">
+                    <p v-if="firstError('director_position')" class="mt-1.5 text-xs text-red-600">{{ firstError('director_position') }}</p>
+                </div>
             </div>
         </section>
 
         <section class="rounded-2xl border border-zinc-200 p-5 sm:p-6">
             <h3 class="font-semibold text-zinc-950">Контактные данные для документов и заказов</h3>
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Контактное лицо</label><input v-model="form.contact_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ФИО"><p v-if="firstError('contact_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_name') }}</p></div>
-                <div><label class="mb-1.5 block text-sm font-medium text-zinc-700">Телефон</label><input v-model="form.contact_phone" type="tel" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="+7 999 123-45-67"><p v-if="firstError('contact_phone')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_phone') }}</p></div>
-                <div class="sm:col-span-2"><label class="mb-1.5 block text-sm font-medium text-zinc-700">Email</label><input v-model="form.contact_email" type="email" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="docs@company.ru"><p v-if="firstError('contact_email')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_email') }}</p></div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Контактное лицо</label>
+                    <input v-model="form.contact_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="ФИО">
+                    <p v-if="firstError('contact_name')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_name') }}</p>
+                </div>
+                <div>
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Телефон</label>
+                    <input v-model="form.contact_phone" type="tel" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="+7 999 123-45-67">
+                    <p v-if="firstError('contact_phone')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_phone') }}</p>
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="mb-1.5 block text-sm font-medium text-zinc-700">Email</label>
+                    <input v-model="form.contact_email" type="email" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" placeholder="docs@company.ru">
+                    <p v-if="firstError('contact_email')" class="mt-1.5 text-xs text-red-600">{{ firstError('contact_email') }}</p>
+                </div>
             </div>
         </section>
 

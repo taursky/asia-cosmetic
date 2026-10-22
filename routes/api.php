@@ -26,4 +26,5 @@ Route::prefix('1c/v1')
 
         Route::get('/orders', [OneCController::class, 'orders']);
         Route::post('/orders/{order:uuid}/status', [OneCController::class, 'orderStatus']);
+        Route::post('/orders/{order:uuid}/invoice', [OneCController::class, 'orderInvoice']);
     });

@@ -170,7 +170,7 @@ class OneCController extends Controller
         $path = $validated['invoice']->storeAs(
             'invoices/' . $order->uuid,
             'invoice.pdf',
-            'local'
+            'public'
         );
 
         if ($path === false) {

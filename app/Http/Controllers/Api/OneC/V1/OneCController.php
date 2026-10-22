@@ -155,6 +155,7 @@ class OneCController extends Controller
         );
     }
 
+
     public function orderInvoice(Request $request, Order $order): JsonResponse
     {
         $validated = $request->validate([
@@ -166,12 +167,26 @@ class OneCController extends Controller
             ],
         ]);
 
+        $path = $validated['invoice']->storeAs(
+            'invoices/' . $order->uuid,
+            'invoice.pdf',
+            'local'
+        );
+
+        if ($path === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не удалось сохранить PDF-счёт',
+            ], 500);
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'PDF успешно получен и проверен',
+            'message' => 'PDF-счёт успешно сохранён',
             'order_uuid' => $order->uuid,
-            'filename' => $validated['invoice']->getClientOriginalName(),
+            'path' => $path,
             'size' => $validated['invoice']->getSize(),
         ]);
     }
+
 }

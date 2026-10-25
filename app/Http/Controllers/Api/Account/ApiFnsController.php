@@ -44,7 +44,6 @@ class ApiFnsController extends Controller
         ]);
     }
 
-
     public function bankByBik(Request $request, DaDataService $dadata): JsonResponse
     {
         $data = $request->validate([
@@ -62,6 +61,13 @@ class ApiFnsController extends Controller
             ['user_id' => $request->user()->id],
             ['legal_type' => 'individual', 'verification_status' => 'draft'],
         );
+
+        if (in_array($profile->legal_type, [CustomerProfile::LEGAL_TYPE_IP, CustomerProfile::LEGAL_TYPE_ENTITY], true)
+            && $profile->verification_status === 'verified') {
+            throw ValidationException::withMessages([
+                'fns' => 'Реквизиты подтверждены. Повторная проверка недоступна.',
+            ]);
+        }
 
         $req = $profile->inn ?: ($profile->ogrn ?: $profile->ogrnip);
 

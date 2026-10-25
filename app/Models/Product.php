@@ -41,7 +41,11 @@ class Product extends Model
     }
 
     public function variants(): HasMany { return $this->hasMany(ProductVariant::class)->orderBy('sort_order'); }
-    public function prices(): HasMany { return $this->hasMany(ProductPrice::class); }
+
+    public function prices(): HasMany {
+        return $this->hasMany(ProductPrice::class);//->with('priceType');
+    }
+
     public function images(): MorphMany { return $this->morphMany(Image::class, 'imageable'); }
 
     public function attributeValues(): BelongsToMany

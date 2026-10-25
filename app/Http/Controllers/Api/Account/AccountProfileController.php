@@ -5,9 +5,14 @@ namespace App\Http\Controllers\Api\Account;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Models\CustomerRole;
+use App\Models\User;
+use App\Services\Auth\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AccountProfileController extends Controller
 {
@@ -77,19 +82,87 @@ class AccountProfileController extends Controller
         ]);
     }
 
+//    public function updatePersonal(Request $request): JsonResponse
+//    {
+//        $data = $request->validate([
+//            'name' => ['required', 'string', 'max:255'],
+//            'email' => ['nullable', 'string', 'email', 'max:255'],
+//            'phone' => ['nullable', 'string', 'max:255'],
+//        ]);
+//        Log::info('updatePersonal data', [$data]);
+//        $request->user()->update($data);
+//
+//        return $this->show($request);
+//    }
+
     public function updatePersonal(Request $request): JsonResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'email' => ['nullable', 'string', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:32'],
         ]);
 
-        $request->user()->update($data);
+        try {
+            $phone = app(PhoneNormalizer::class)
+                ->normalize($data['phone']);
+        } catch (\InvalidArgumentException) {
+            throw ValidationException::withMessages([
+                'phone' => 'Проверьте формат номера телефона.',
+            ]);
+        }
+
+        $user = $request->user();
+
+        if (
+            User::query()
+                ->where('phone', $phone)
+                ->whereKeyNot($user->id)
+                ->exists()
+        ) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'phone' => 'Этот номер телефона уже используется другим аккаунтом.',
+            ]);
+        }
+
+       DB::transaction(
+            function () use ($user, $data, $phone): void {
+                $phoneChanged = $user->phone !== $phone;
+                $user->forceFill([
+                    'name' => $data['name'],
+                    'phone' => $phone,
+                    'phone_verified_at' => $phoneChanged
+                        ? null
+                        : $user->phone_verified_at,
+                ])->save();
+
+                if ($phoneChanged) {
+                    \App\Models\CustomerProfile::query()->updateOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'verification_status' =>
+                                \App\Models\CustomerProfile::STATUS_PENDING,
+                            'verified_at' => null,
+                        ]
+                    );
+                }
+            }
+        );
 
         return $this->show($request);
     }
 
     public function update(Request $request): JsonResponse
     {
+        $existing = CustomerProfile::query()->where('user_id', $request->user()->id)->first();
+        if ($existing
+            && in_array($existing->legal_type, [CustomerProfile::LEGAL_TYPE_IP, CustomerProfile::LEGAL_TYPE_ENTITY], true)
+            && $existing->verification_status === 'verified') {
+            throw ValidationException::withMessages([
+                'profile' => 'Реквизиты подтверждены. Изменить их можно после разблокировки менеджером.',
+            ]);
+        }
+
         $data = $request->validate([
             'legal_type' => [
                 'required',
@@ -124,6 +197,7 @@ class AccountProfileController extends Controller
                 'inn' => ['required', 'digits:10'],
                 'kpp' => ['required', 'digits:9'],
                 'ogrn' => ['required', 'digits:13'],
+                'bank_account' => ['required', 'digits:20'],
             ])->validate();
         }
 
@@ -132,6 +206,7 @@ class AccountProfileController extends Controller
                 'company_name' => ['required'],
                 'inn' => ['required', 'digits:12'],
                 'ogrnip' => ['required', 'digits:15'],
+                'bank_account' => ['required', 'digits:20'],
             ])->validate();
         }
 

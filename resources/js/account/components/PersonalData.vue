@@ -1,11 +1,15 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 
 const loading = ref(true)
 const saving = ref(false)
 const message = ref('')
 const error = ref('')
 const form = reactive({ name: '', email: '', phone: '' })
+const user = ref(null)
+const role = computed(() => user.value?.customer_role || null)
+const profile = computed(() => user.value?.customer_profile || null)
+const statusText = (status) => ({ draft: 'Черновик', pending: 'На проверке', verified: 'Подтверждены', rejected: 'Требуют исправления' }[status] || 'Не заполнены')
 
 const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || ''
 
@@ -15,12 +19,16 @@ onMounted(async () => {
             headers: { Accept: 'application/json' },
             credentials: 'same-origin',
         })
+        if (!response.ok) throw new Error('Не удалось загрузить профиль.')
         const payload = await response.json()
+        user.value = payload.user
         Object.assign(form, {
             name: payload.user?.name || '',
             email: payload.user?.email || '',
             phone: payload.user?.phone || '',
         })
+    } catch (e) {
+        error.value = e.message || 'Ошибка загрузки профиля.'
     } finally {
         loading.value = false
     }
@@ -39,7 +47,11 @@ async function save() {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': csrf(),
         },
-        body: JSON.stringify({ name: form.name }),
+        body: JSON.stringify({
+            name: form.name,
+            email: form.email,
+            phone: form.phone,
+        }),
     })
 
     const payload = await response.json().catch(() => ({}))
@@ -52,6 +64,11 @@ async function save() {
 <template>
     <div v-if="loading" class="py-8 text-sm text-zinc-500">Загрузка...</div>
     <form v-else class="space-y-6" @submit.prevent="save">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Уровень покупателя</div><div class="mt-2 text-lg font-semibold">{{ role?.name || 'Не назначен' }}</div><div v-if="user?.customer_role_valid_until" class="mt-1 text-xs text-zinc-500">Действует до {{ new Date(user.customer_role_valid_until).toLocaleDateString('ru-RU') }}</div></div>
+            <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Тип цены</div><div class="mt-2 text-lg font-semibold">{{ role?.price_type?.name || 'Не назначен' }}</div><div v-if="role?.price_type?.code" class="mt-1 text-xs text-zinc-400">{{ role.price_type.code }}</div></div>
+            <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Реквизиты</div><div class="mt-2 text-lg font-semibold">{{ statusText(profile?.verification_status) }}</div><div v-if="profile?.company_name" class="mt-1 text-xs text-zinc-500">{{ profile.company_name }}</div></div>
+        </div>
         <div>
             <h2 class="text-2xl font-semibold text-zinc-950">Личные данные</h2>
             <p class="mt-1 text-sm text-zinc-500">Email и телефон меняются только с повторным подтверждением в разделе безопасности.</p>
@@ -64,11 +81,13 @@ async function save() {
             </div>
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-zinc-700">Email</label>
-                <input :value="form.email" disabled class="w-full px-4 py-2 border border-gray-300 rounded-xl bg-zinc-50 text-zinc-500">
+                <!--bg-zinc-50 -->
+                <input v-model="form.email" class="w-full px-4 py-2 border border-gray-300 rounded-xl text-zinc-500">
             </div>
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-zinc-700">Телефон</label>
-                <input :value="form.phone" disabled class="w-full px-4 py-2 border border-gray-300 rounded-xl bg-zinc-50 text-zinc-500">
+                <input v-model="form.phone" class="w-full px-4 py-2 border border-gray-300 rounded-xl bg-zinc-50 text-zinc-500">
+                <p class="mt-1 text-sm text-red-600">При изменении номера телефона моет потребоваться обращение в службу поддержки.</p>
             </div>
         </div>
 

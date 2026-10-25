@@ -72,11 +72,8 @@ class PhoneLoginController extends Controller
         ]);
     }
 
-    public function verify(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): RedirectResponse {
+    public function verify(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes,): RedirectResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
             'code' => ['required', 'digits_between:4,8'],

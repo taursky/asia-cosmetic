@@ -46,6 +46,7 @@ class CustomerForm
                         ->dehydrated(fn ($state): bool => filled($state))
                         ->rule(Password::min(8)),
                 ])
+                ->collapsible()
                 ->columnSpanFull()
                 ->columns(2),
 
@@ -74,6 +75,7 @@ class CustomerForm
                         ->label('Роль действует до')
                         ->seconds(false),
                 ])
+                ->collapsible()
                 ->columnSpanFull()
                 ->columns(3),
 
@@ -127,6 +129,7 @@ class CustomerForm
                     TextInput::make('contact_phone')->label('Контактный телефон')->tel()->maxLength(255),
                     TextInput::make('contact_email')->label('Контактный email')->email()->maxLength(255),
                 ])
+                ->collapsible()
                 ->columnSpanFull()
                 ->columns(3),
 
@@ -174,6 +177,7 @@ class CustomerForm
                         ->columns(2)
                         ->columnSpanFull(),
                 ])
+                ->collapsible()
                 ->columnSpanFull(),
         ]);
     }

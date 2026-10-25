@@ -1,15 +1,14 @@
 <script setup>
 import { ref } from 'vue'
-import AccountOverview from './components/AccountOverview.vue'
+
 import PersonalData from './components/PersonalData.vue'
 import CompanyDetails from './components/CompanyDetails.vue'
 import AccountDocuments from './components/AccountDocuments.vue'
 import AccountOrders from './components/AccountOrders.vue'
 
-const section = ref('overview')
+const section = ref('personal')
 
 const sections = [
-    { key: 'overview', title: 'Обзор' },
     { key: 'personal', title: 'Личные данные' },
     { key: 'company', title: 'Реквизиты' },
     { key: 'orders', title: 'Заказы' },
@@ -34,8 +33,7 @@ const sections = [
         </aside>
 
         <main class="min-w-0 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5 sm:p-7">
-            <AccountOverview v-if="section === 'overview'" />
-            <PersonalData v-else-if="section === 'personal'" />
+            <PersonalData v-if="section === 'personal'" />
             <CompanyDetails v-else-if="section === 'company'" />
             <AccountOrders v-else-if="section === 'orders'" />
             <AccountDocuments v-else-if="section === 'documents'" />

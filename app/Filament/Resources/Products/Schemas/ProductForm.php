@@ -159,17 +159,39 @@ class ProductForm
                 ->label('Цены')
                 ->addActionLabel('Добавить цену')
                 ->defaultItems(0)
+                ->itemLabel(function (array $state): ?string {
+                    $priceTypes = once(fn () => ProductPriceType::query()
+                        ->where('is_active', true)
+                        ->orderBy('sort_order')
+                        ->pluck('name', 'id')
+                        ->all()
+                    );
+                    $id = $state['product_price_type_id'] ?? null;
+
+                    return $priceTypes[$id] ?? ($id ? "Тип цены #{$id}" : 'Новая цена');
+                })
                 ->schema([
                     Select::make('product_price_type_id')
                         ->label('Тип цены')
-                        ->options(fn () => ProductPriceType::query()->where('is_active', true)->orderBy('sort_order')->pluck('name', 'id'))
-                        ->searchable()->preload()->required(),
+                        ->options(fn () => ProductPriceType::query()
+                            ->where('is_active', true)
+                            ->orderBy('sort_order')
+                            ->pluck('name', 'id'))
+                        ->searchable()
+                        ->preload()
+                        ->required(),
                     Select::make('product_variant_id')
                         ->label('Опция / SKU')
                         ->options(function ($livewire): array {
                             /** @var Product|null $product */
                             $product = method_exists($livewire, 'getRecord') ? $livewire->getRecord() : null;
-                            return $product?->variants()->orderBy('sort_order')->pluck('sku', 'id')->all() ?? [];
+                            if (! $product) {
+                                return [];
+                            }
+
+                            $product->loadMissing('variants');
+
+                            return $product->variants->pluck('sku', 'id')->all();
                         })
                         ->searchable()
                         ->placeholder('Базовая цена товара'),
@@ -189,7 +211,7 @@ class ProductForm
     {
         return [
             Select::make('attributeValues')
-                ->relationship('attributeValues', 'id')
+                ->relationship('attributeValues', 'id', modifyQueryUsing: fn ($query) => $query->with(['attribute.lang', 'lang']))
                 ->label('Значения атрибутов')
                 ->multiple()
                 ->searchable()
@@ -206,7 +228,7 @@ class ProductForm
                 ->description('Какие значения опций могут использоваться у вариантов этого товара.')
                 ->schema([
                     Select::make('optionValues')
-                        ->relationship('optionValues', 'id')
+                        ->relationship('optionValues', 'id', modifyQueryUsing: fn ($query) => $query->with(['option.lang', 'lang']))
                         ->label('Значения опций')
                         ->multiple()
                         ->searchable()
@@ -261,7 +283,7 @@ class ProductForm
                         ])->columns(2),
 
                     Select::make('optionValues')
-                        ->relationship('optionValues', 'id')
+                        ->relationship('optionValues', 'id', modifyQueryUsing: fn ($query) => $query->with(['option.lang', 'lang']))
                         ->label('Значения опций SKU')
                         ->multiple()->searchable()->preload()
                         ->getOptionLabelFromRecordUsing(fn (OptionValue $record): string => trim(($record->option?->lang?->name ?? $record->option?->code ?? 'Опция') . ': ' . ($record->lang?->value ?? $record->code ?? "#{$record->id}")))
@@ -298,7 +320,7 @@ class ProductForm
     {
         return [
             Select::make('categories')
-                ->relationship('categories', 'id')
+                ->relationship('categories', 'id', modifyQueryUsing: fn ($query) => $query->with('lang'))
                 ->label('Категории')
                 ->multiple()
                 ->searchable()
@@ -313,6 +335,15 @@ class ProductForm
         return [
             ...ImageUploadFields::schema('catalog/products'),
         ];
+    }
+
+    private static function activePriceTypes(): array
+    {
+        return once(static fn (): array => ProductPriceType::query()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->pluck('name', 'id')
+            ->all());
     }
 
     private static function locales(): array

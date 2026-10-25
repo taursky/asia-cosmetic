@@ -155,7 +155,6 @@ class OneCController extends Controller
         );
     }
 
-
     public function orderInvoice(Request $request, Order $order): JsonResponse
     {
         $validated = $request->validate([

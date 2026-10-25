@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\CustomerProfile;
 use App\Models\User;
 use App\Services\Auth\AccountEmailVerificationService;
 use App\Services\Auth\PhoneCodeService;
@@ -11,13 +12,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
+use Illuminate\Support\Facades\DB;
 
 class AccountIdentityController extends Controller
 {
-    public function sendEmail(
-        Request $request,
-        AccountEmailVerificationService $verification,
-    ): JsonResponse {
+    public function sendEmail(Request $request, AccountEmailVerificationService $verification): JsonResponse {
         $data = $request->validate([
             'email' => ['required', 'email:rfc', 'max:255'],
         ]);
@@ -27,11 +26,8 @@ class AccountIdentityController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function sendPhone(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): JsonResponse {
+    public function sendPhone(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes): JsonResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
         ]);
@@ -66,11 +62,8 @@ class AccountIdentityController extends Controller
         ]);
     }
 
-    public function verifyPhone(
-        Request $request,
-        PhoneNormalizer $normalizer,
-        PhoneCodeService $codes,
-    ): JsonResponse {
+    public function verifyPhone(Request $request, PhoneNormalizer $normalizer, PhoneCodeService $codes): JsonResponse
+    {
         $data = $request->validate([
             'phone' => ['required', 'string', 'max:32'],
             'code' => ['required', 'digits_between:4,8'],
@@ -94,16 +87,39 @@ class AccountIdentityController extends Controller
             purpose: 'account_phone:' . $request->user()->id,
             code: $data['code'],
         );
-
         $user = $request->user();
-        $user->forceFill([
-            'phone' => $verifiedPhone,
-            'phone_verified_at' => now(),
-        ])->save();
+
+        DB::transaction(function () use ($user, $verifiedPhone): void {
+            $oldPhone = $user->phone;
+
+            $user->forceFill([
+                'phone' => $verifiedPhone,
+                'phone_verified_at' => now(),
+            ])->save();
+
+            if ($oldPhone !== $verifiedPhone) {
+                CustomerProfile::query()
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'verification_status' => CustomerProfile::STATUS_PENDING,
+                        'verified_at' => null,
+                    ]);
+            }
+        });
 
         return response()->json([
             'ok' => true,
             'user' => $user->fresh()->load('customerRole.priceType'),
         ]);
+//        $user = $request->user();
+//        $user->forceFill([
+//            'phone' => $verifiedPhone,
+//            'phone_verified_at' => now(),
+//        ])->save();
+//
+//        return response()->json([
+//            'ok' => true,
+//            'user' => $user->fresh()->load('customerRole.priceType'),
+//        ]);
     }
 }

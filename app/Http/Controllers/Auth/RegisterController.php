@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisterController extends Controller
@@ -27,12 +28,30 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
             'password' => ['required', 'confirmed', Password::min(8)],
+            'phone' => ['required', 'string', 'max:32'],
         ]);
+
+        $normalizer = app(\App\Services\Auth\PhoneNormalizer::class);
+
+        try {
+            $phone = $normalizer->normalize($data['phone']);
+        } catch (\InvalidArgumentException) {
+            throw ValidationException::withMessages([
+                'phone' => 'Проверьте формат номера телефона.',
+            ]);
+        }
+
+        if (User::where('phone', $phone)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'phone' => 'Этот номер телефона уже зарегистрирован.',
+            ]);
+        }
 
         $user = User::query()->create([
             'name' => $data['name'],
             'email' => mb_strtolower($data['email']),
             'password' => $data['password'],
+            'phone' => $data['phone'],
             'is_active' => true,
         ]);
 

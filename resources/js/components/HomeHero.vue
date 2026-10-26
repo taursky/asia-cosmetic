@@ -14,10 +14,12 @@ function select(index) {
     if (index >= 0 && index < availableSlides.value.length) active.value = index
 }
 function next() {
-    if (availableSlides.value.length > 1) active.value = (active.value + 1) % availableSlides.value.length
+    if (availableSlides.value.length > 1) active.value = (active.value + 1) % availableSlides.value.length;
+    startTimer();
 }
 function previous() {
-    if (availableSlides.value.length > 1) active.value = (active.value - 1 + availableSlides.value.length) % availableSlides.value.length
+    if (availableSlides.value.length > 1) active.value = (active.value - 1 + availableSlides.value.length) % availableSlides.value.length;
+    startTimer();
 }
 function stopTimer() {
     if (timer !== null) window.clearInterval(timer)
@@ -25,7 +27,7 @@ function stopTimer() {
 }
 function startTimer() {
     stopTimer()
-    if (availableSlides.value.length > 1) timer = window.setInterval(next, 5500)
+    if (availableSlides.value.length > 1) timer = window.setInterval(next, 8000)
 }
 watch(availableSlides, () => {
     active.value = 0

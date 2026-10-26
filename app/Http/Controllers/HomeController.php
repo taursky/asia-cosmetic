@@ -92,38 +92,12 @@ class HomeController extends Controller
                 'link' => $banner->link,
             ]);
 
-
-        $heroSlides = [
-            [
-                'eyebrow' => 'Asia Cosmetic',
-                'title' => 'Профессиональная косметика из Азии',
-                'text' => 'Оригинальные продукты для салонов, косметологов и домашнего ухода.',
-                'button' => 'Перейти в каталог',
-                'url' => route('catalog.index'),
-            ],
-            [
-                'eyebrow' => 'Новинки',
-                'title' => 'Новые формулы и профессиональные серии',
-                'text' => 'Свежие поступления каталога — от базового ухода до интенсивных программ.',
-                'button' => 'Смотреть новинки',
-                'url' => '#new-products',
-            ],
-            [
-                'eyebrow' => 'Специальные цены',
-                'title' => 'Выгодные предложения для вашего ухода',
-                'text' => 'Товары со сниженной розничной ценой и актуальные предложения каталога.',
-                'button' => 'Смотреть скидки',
-                'url' => '#sale-products',
-            ],
-        ];
-
         return view('home', compact(
             'categories',
             'saleProducts',
             'hitProducts',
             'newProducts',
             'banners',
-            'heroSlides',
         ));
     }
 

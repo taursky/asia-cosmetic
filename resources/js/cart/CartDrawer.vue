@@ -36,7 +36,8 @@ async function change(item, delta) {
                         <article v-for="item in cartStore.items" :key="item.id" class="py-5">
                             <div class="flex gap-4">
                                 <div class="size-20 shrink-0 overflow-hidden rounded-xl bg-zinc-50">
-                                    <img v-if="item.image" :src="`/storage/${item.image}`" alt="" class="size-full object-contain p-2">
+<!--                                    <img v-if="item.image" :src="`/storage/${item.image}`" alt="" class="size-full object-contain p-2">-->
+                                    <img v-if="item.image" :src="`${item.image}`" alt="" class="size-full object-contain p-2">
                                 </div>
 
                                 <div class="min-w-0 flex-1">

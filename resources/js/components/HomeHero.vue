@@ -42,8 +42,7 @@ onBeforeUnmount(stopTimer)
         <div v-if="currentSlide" class="relative overflow-hidden rounded-[2rem] bg-[#bdbdbd]">
             <div class="relative aspect-[4/5] sm:aspect-[16/7] lg:aspect-[21/8]">
                 <transition name="fade" mode="out-in">
-                    <a
-                        v-if="currentSlide.link"
+                    <a v-if="currentSlide.link"
                         :key="currentSlide.id ?? active"
                         :href="currentSlide.link"
                         class="absolute inset-0 block"

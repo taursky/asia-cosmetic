@@ -2,13 +2,10 @@
 
 @php
     use Illuminate\Support\Facades\Storage;
-
     $variant = $product->variants->first();
-
     $images = $product->images->isNotEmpty()
         ? $product->images
         : ($variant?->images ?? collect());
-
     $currentPrice = $variant?->display_price ?? $product->display_price;
     $oldPrice = $variant?->display_old_price ?? $product->display_old_price;
     $priceTypeName = $variant?->display_price_type_name ?? $product->display_price_type_name;
@@ -19,6 +16,7 @@
 @section('content')
 <div class="bg-white">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {{-- breadcrumbs --}}
         <nav class="mb-8 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             <a href="{{ route('home') }}" class="hover:text-slate-950">Главная</a>
             <span>/</span>
@@ -26,15 +24,12 @@
 
             @if($product->categories->first()?->lang)
                 <span>/</span>
-                <a
-                    href="{{ route('catalog.category', $product->categories->first()->lang->slug) }}"
-                    class="hover:text-slate-950"
-                >
+                <a href="{{ route('catalog.category', $product->categories->first()->lang->slug) }}" class="hover:text-slate-950">
                     {{ $product->categories->first()->lang->name }}
                 </a>
             @endif
         </nav>
-
+        {{-- /breadcrumbs --}}
         <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
             <section>
                 <div class="overflow-hidden rounded-3xl bg-slate-50">

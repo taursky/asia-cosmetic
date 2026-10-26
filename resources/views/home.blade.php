@@ -5,7 +5,7 @@
 @section('content')
 <div class="min-h-screen bg-white text-zinc-900">
     <main>
-        <section class="mx-auto max-w-7xl px-4 pb-5 pt-6 sm:px-6 lg:px-8 lg:pt-8">
+        <section class="mx-auto max-w-screen px-4 pb-5 pt-6 sm:px-6 lg:px-8 lg:pt-8">
             <div data-vue-component="HomeHero" data-props='@json(["slides" => $banners])'></div>
         </section>
 
@@ -13,7 +13,7 @@
         <x-catalog.product-section id="hit-products" title="Хиты продаж" :products="$hitProducts" />
         @if ($categories->isNotEmpty())
             <section class="bg-zinc-50 py-12 sm:py-16">
-                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div class="mx-auto max-w-screen-* px-4 sm:px-6 lg:px-8">
                     <div class="mb-8 flex items-end justify-between gap-4">
                         <div>
                             <div class="mb-2 text-xs font-semibold uppercase tracking-[.2em] text-blue-900">Каталог</div>
@@ -47,7 +47,7 @@
         <x-catalog.product-section id="new-products" title="Новинки" :products="$newProducts" />
 
         <section id="about" class="py-14 sm:py-20">
-            <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
+            <div class="mx-auto grid max-w-screen-* gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
                 <div class="lg:col-span-5">
                     <div class="text-xs font-semibold uppercase tracking-[.2em] text-blue-900">Asia Cosmetic</div>
                     <h2 class="mt-3 text-3xl font-semibold leading-tight tracking-[-.035em] sm:text-4xl">Профессиональный каталог азиатской косметики</h2>

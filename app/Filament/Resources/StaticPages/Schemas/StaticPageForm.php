@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\StaticPages\Schemas;
 
+use AmidEsfahani\FilamentTinyEditor\TinyEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
@@ -64,16 +65,21 @@ class StaticPageForm
                                         ->label('Заголовок')
                                         ->required()
                                         ->maxLength(255),
-                                    RichEditor::make('content')
-                                        ->label('Содержимое')
-                                        ->columnSpanFull()
-                                        ->fileAttachmentsDisk('public')
-                                        ->fileAttachmentsDirectory(fn (?Model $record): string =>
-                                        ($record?->page_id ?? $record?->id)
-                                            ? 'page/' . ($record->page_id ?? $record->id)
-                                            : 'page/_pending')
-                                        ->fileAttachmentsVisibility('public')
-                                        ->helperText('Изображения должны сохраняться в page/{page_id}/. Добавляйте изображения после создания страницы.'),
+//                                    RichEditor::make('content')
+//                                        ->label('Содержимое')
+//                                        ->columnSpanFull()
+//                                        ->fileAttachmentsDisk('public')
+//                                        ->fileAttachmentsDirectory(fn (?Model $record): string =>
+//                                        ($record?->page_id ?? $record?->id)
+//                                            ? 'page/' . ($record->page_id ?? $record->id)
+//                                            : 'page/_pending')
+//                                        ->fileAttachmentsVisibility('public')
+//                                        ->helperText('Изображения должны сохраняться в page/{page_id}/. Добавляйте изображения после создания страницы.'),
+
+                                    TinyEditor::make('content')
+                                        ->label('Новость')
+                                        ->profile('with_source') // или создайте свой профиль
+                                        ->columnSpanFull(),
                                     TextInput::make('meta_title')
                                         ->label('SEO Title')
                                         ->maxLength(255)

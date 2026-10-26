@@ -1,4 +1,5 @@
 import './bootstrap'
+import '../css/style.css'
 import { createApp } from 'vue'
 
 // import './app.account.patch.js'

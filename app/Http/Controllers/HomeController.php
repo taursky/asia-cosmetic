@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\StaticPage;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,26 +20,50 @@ class HomeController extends Controller
     {
         $locale = app()->getLocale();
 
+        $userId = auth('web')->id();
+        $validPrice = static fn (Builder $query) => $query
+            ->where('amount', '>', 0)
+            ->where('min_quantity', '<=', 1)
+            ->where(fn (Builder $q) => $q
+                ->whereNull('valid_from')
+                ->orWhere('valid_from', '<=', now()))
+            ->where(fn (Builder $q) => $q
+                ->whereNull('valid_until')
+                ->orWhere('valid_until', '>=', now()))
+            ->whereHas('priceType', fn (Builder $q) =>
+            $q->where('is_active', true)
+            );
         $baseProductQuery = fn (): Builder => Product::query()
             ->where('is_active', true)
             ->where('is_visible', true)
-            ->whereHas('prices', function ($query)  {
-                //todo: изменить, когда будут цены
-                $query->where('product_price_type_id', 6);
-            })
-            ->whereHas('lang', fn (Builder $query) => $query->where('lang', $locale))
-            ->with([
-                'lang',
-                'images' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('position'),
-                'variants' => fn ($query) => $query
+            ->when($userId !== null, fn (Builder $query) =>
+            $query->withExists([
+                'favoritedBy as is_favorite' => fn (Builder $favoriteQuery) =>
+                $favoriteQuery->where('users.id', $userId),
+            ])
+            )
+            ->where(fn (Builder $query) => $query
+                ->whereHas('prices', $validPrice)
+                ->orWhereHas('variants', fn (Builder $variantQuery) =>
+                $variantQuery
                     ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->with([
-                        'images' => fn ($imageQuery) => $imageQuery->orderByDesc('is_primary')->orderBy('position'),
-                        'prices.priceType',
-                    ]),
-                'prices.priceType',
-            ]);
+                    ->whereHas('prices', $validPrice)
+                )
+            )
+            ->whereHas('lang', fn (Builder $query) => $query->where('lang', $locale))
+//            ->with([
+//                'lang',
+//                'images' => fn ($query) => $query->orderByDesc('is_primary')->orderBy('position'),
+//                'variants' => fn ($query) => $query
+//                    ->where('is_active', true)
+//                    ->orderBy('sort_order')
+//                    ->with([
+//                        'images' => fn ($imageQuery) => $imageQuery->orderByDesc('is_primary')->orderBy('position'),
+//                        'prices.priceType',
+//                    ]),
+//                'prices.priceType',
+//            ])
+        ;
 
         $saleProducts = $baseProductQuery()
             ->whereHas('prices', fn (Builder $query) => $query
@@ -57,6 +82,43 @@ class HomeController extends Controller
             ->latest('created_at')
             ->limit(12)
             ->get();
+
+        // Уникальные товары из всех трёх подборок.
+        $allProducts = new EloquentCollection(
+            $saleProducts
+                ->concat($hitProducts)
+                ->concat($newProducts)
+                ->unique('id')
+                ->values()
+                ->all()
+        );
+
+        // Загружаем связи один раз.
+        $allProducts->load([
+            'lang',
+            'images' => fn ($query) => $query
+                ->orderByDesc('is_primary')
+                ->orderBy('position'),
+            'variants' => fn ($query) => $query
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->with([
+                    'images' => fn ($imageQuery) => $imageQuery
+                        ->orderByDesc('is_primary')
+                        ->orderBy('position'),
+                    'prices.priceType',
+                ]),
+            'prices.priceType',
+        ]);
+
+        // Рассчитываем цены один раз для каждого уникального товара.
+        app(\App\Services\Pricing\CatalogPricePresenter::class)
+            ->decorateCollection($allProducts, auth('web')->user());
+        // Подставляем подготовленные модели обратно в подборки.
+        $productsById = $allProducts->keyBy('id');
+        $saleProducts = $saleProducts->map(fn (Product $product) => $productsById->get($product->id));
+        $hitProducts = $hitProducts->map(fn (Product $product) => $productsById->get($product->id));
+        $newProducts = $newProducts->map(fn (Product $product) => $productsById->get($product->id));
 
         $categories = Category::query()
             ->whereNull('parent_id')

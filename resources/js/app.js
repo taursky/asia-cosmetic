@@ -1,5 +1,7 @@
 import './bootstrap'
 import '../css/style.css'
+import './favorites.js'
+import './favorites-header.js'
 import { createApp } from 'vue'
 
 // import './app.account.patch.js'

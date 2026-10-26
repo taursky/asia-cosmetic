@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;
 use App\Http\Controllers\Api\Account\ApiFnsController;
 use App\Http\Controllers\BlogController;
+use App\Http\Controllers\FavoriteController;
 
 Route::middleware('guest:web')->group(function (): void {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -127,6 +128,10 @@ Route::middleware('auth:web')->group(function (): void {
     //Скачать документ
     Route::get('/account/documents/{document}', [AccountDocumentsController::class, 'download'])
         ->name('account.documents.download');
+
+    Route::get('/favorites', [FavoriteController::class, 'index'])->name('favorites.index');
+    Route::post('/favorites/{product}', [FavoriteController::class, 'store'])->name('favorites.store');
+    Route::delete('/favorites/{product}', [FavoriteController::class, 'destroy'])->name('favorites.destroy');
 });
 
 Route::middleware('auth:web')

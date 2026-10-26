@@ -65,4 +65,10 @@ class Product extends Model
         return $this->belongsToMany(Category::class)
             ->withPivot('sort_order')->orderByPivot('sort_order');
     }
+
+    public function favoritedBy(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'favorite_products')
+            ->withTimestamps();
+    }
 }

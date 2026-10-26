@@ -3,6 +3,7 @@
 namespace App\Services\Pricing;
 
 use App\Models\Product;
+use App\Models\ProductPriceType;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -22,12 +23,22 @@ class CatalogPricePresenter
 
     public function decorateCollection(Collection $products, ?User $user): Collection
     {
-        $products->each(fn (Product $product) => $this->decorateProduct($product, $user));
+        if ($products->isEmpty()) {
+            return $products;
+        }
+
+        $type = $this->resolver->priceTypeFor($user);
+        $products->each(fn (Product $product) => $this->decorateProductWithType($product, $user, $type));
 
         return $products;
     }
 
     public function decorateProduct(Product $product, ?User $user): Product
+    {
+        return $this->decorateProductWithType($product, $user, $this->resolver->priceTypeFor($user));
+    }
+
+    private function decorateProductWithType(Product $product, ?User $user, ProductPriceType $type): Product
     {
         $product->loadMissing([
             'prices.priceType',
@@ -36,11 +47,11 @@ class CatalogPricePresenter
 
         foreach ($product->variants as $variant) {
             $variant->setRelation('product', $product);
-            $quote = $this->resolver->displayPriceForVariant($variant, $user);
+            $quote = $this->resolver->displayPriceForVariant($variant, $user, $type);
             $this->apply($variant, $quote);
         }
 
-        $quote = $this->resolver->displayPriceForProduct($product, $user);
+        $quote = $this->resolver->displayPriceForProduct($product, $user, $type);
         $this->apply($product, $quote);
 
         return $product;

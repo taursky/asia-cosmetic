@@ -14,7 +14,9 @@
     $oldPrice = $product->display_old_price;
 @endphp
 
-<article class="group flex h-full flex-col">
+<article class="group relative flex h-full flex-col">
+    <x-catalog.favorite-button :product="$product" />
+
     <a href="{{ route('catalog.product', $product->lang?->slug) }}" class="block">
         <div class="overflow-hidden rounded-2xl bg-slate-50">
             @if($image)
@@ -41,7 +43,6 @@
                     {{ $variant?->sku ?? $product->sku }}
                 </div>
             @endif
-
             <div class="mt-3 min-h-12">
                 @if($price !== null)
                     <div class="flex flex-wrap items-baseline gap-2">
@@ -55,7 +56,6 @@
                             </span>
                         @endif
                     </div>
-
                     <div class="mt-1 text-[11px] font-medium text-slate-400">
                         {{ auth()->check() ? 'Ваша цена' : 'Цена' }} · {{ $product->display_price_type_name }}
                     </div>

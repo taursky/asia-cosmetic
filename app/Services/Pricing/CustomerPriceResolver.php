@@ -42,6 +42,18 @@ class CustomerPriceResolver
 
     public function priceTypeFor(?User $user): ProductPriceType
     {
+        $key = 'pricing.type.' . ($user?->getKey() ?? 'guest');
+        if (request()->attributes->has($key)) {
+            return request()->attributes->get($key);
+        }
+
+         $type = $this->resolvePriceTypeFor($user);
+        request()->attributes->set($key, $type);
+        return $type;
+    }
+
+    private function resolvePriceTypeFor(?User $user): ProductPriceType
+    {
         if ($user) {
             $role = $this->currentRole($user);
 
@@ -85,9 +97,9 @@ class CustomerPriceResolver
         return $fallback;
     }
 
-    public function displayPriceForProduct(Product $product, ?User $user): array
+    public function displayPriceForProduct(Product $product, ?User $user, ?ProductPriceType $type = null): array
     {
-        $type = $this->priceTypeFor($user);
+        $type ??= $this->priceTypeFor($user);
         $quotes = collect();
 
         foreach ($product->variants->where('is_active', true) as $variant) {
@@ -129,12 +141,7 @@ class CustomerPriceResolver
         float $quantity
     ): array {
         $retail = $this->retailPriceType();
-        $types = ProductPriceType::query()
-            ->where('is_active', true)
-            ->where('sort_order', '<=', $target->sort_order)
-            ->orderByDesc('sort_order')
-            ->orderByDesc('id')
-            ->get();
+        $types = $this->eligiblePriceTypes($target);
 
         // First try the assigned level, then progressively lower levels.
         foreach ($types as $type) {
@@ -343,7 +350,37 @@ class CustomerPriceResolver
         ];
     }
 
+    private function eligiblePriceTypes(ProductPriceType $target): Collection
+    {
+        $key = 'pricing.eligible.' . $target->getKey() . '.' . $target->sort_order;
+        if (request()->attributes->has($key)) {
+            return request()->attributes->get($key);
+        }
+
+        $types = ProductPriceType::query()
+            ->where('is_active', true)
+            ->where('sort_order', '<=', $target->sort_order)
+            ->orderByDesc('sort_order')
+            ->orderByDesc('id')
+            ->get();
+
+        request()->attributes->set($key, $types);
+        return $types;
+    }
+
     private function retailPriceType(): ?ProductPriceType
+    {
+        $key = 'pricing.retail_type';
+        if (request()->attributes->has($key)) {
+            return request()->attributes->get($key);
+        }
+
+        $type = $this->resolveRetailPriceType();
+        request()->attributes->set($key, $type);
+        return $type;
+    }
+
+    private function resolveRetailPriceType(): ?ProductPriceType
     {
         $default = CustomerRole::query()
             ->where('is_active', true)

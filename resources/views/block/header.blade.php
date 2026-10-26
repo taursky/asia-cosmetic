@@ -6,6 +6,7 @@
             <a href="#hit-products" class="hover:text-white">Хиты</a>
             <a href="#sale-products" class="hover:text-white">Акции</a>
             <a href="#new-products" class="hover:text-white">Новинки</a>
+{{--            <a href="{{ route('favorites.index') }}">♡ Избранное</a>--}}
             <a href="{{route('info.page',['slugOrId' => 'delivery'])}}" class="hover:text-white">Доставка</a>
         </nav>
         <div class="ml-auto text-blue-100">Профессиональная косметика • Asia Cosmetic</div>
@@ -30,7 +31,8 @@
         </form>
 
         <div class="flex items-center gap-1 sm:gap-2">
-            <a href="#" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Избранное">♡</a>
+            @include('block.favorites-header')
+{{--            <a href="{{route('blog.index')}}" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Избранное">♡</a>--}}
 <!--            <a href="#" class="grid size-10 place-items-center rounded-full hover:bg-zinc-100" aria-label="Корзина">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-5">
                     <path d="M3 4h2l2 11h10l2-8H6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9" cy="19" r="1"/><circle cx="17" cy="19" r="1"/>

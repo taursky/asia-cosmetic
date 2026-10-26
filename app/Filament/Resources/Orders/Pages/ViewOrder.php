@@ -10,10 +10,13 @@ class ViewOrder extends ViewRecord
 {
     protected static string $resource = OrderResource::class;
 
+    protected function resolveRecord(int|string $key): \Illuminate\Database\Eloquent\Model
+    {
+        return parent::resolveRecord($key)->loadMissing('items');
+    }
+
     protected function getHeaderActions(): array
     {
-        return [
-            EditAction::make(),
-        ];
+        return [EditAction::make()];
     }
 }

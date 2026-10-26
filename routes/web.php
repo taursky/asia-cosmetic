@@ -16,6 +16,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;
 use App\Http\Controllers\Api\Account\ApiFnsController;
+use App\Http\Controllers\BlogController;
 
 Route::middleware('guest:web')->group(function (): void {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -172,3 +173,9 @@ Route::prefix('/info')->group(function () {
     Route::get('page/{slugOrId}', [HomeController::class, 'show'])
         ->where('slugOrId', '[A-Za-z0-9_-]+')->name('info.page');
 });
+
+Route::get('/blog', [BlogController::class, 'index'])
+    ->name('blog.index');
+
+Route::get('/blog/{slug}', [BlogController::class, 'show'])
+    ->name('blog.show');

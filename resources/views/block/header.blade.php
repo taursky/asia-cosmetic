@@ -2,6 +2,7 @@
     <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-2.5 text-xs sm:px-6 lg:px-8">
         <nav class="hidden gap-6 text-blue-100 md:flex">
             <a href="{{route('info.page',['slugOrId' => 'about'])}}" class="hover:text-white">О компании</a>
+            <a href="{{route('blog.index')}}" class="hover:text-white">Блог</a>
             <a href="#hit-products" class="hover:text-white">Хиты</a>
             <a href="#sale-products" class="hover:text-white">Акции</a>
             <a href="#new-products" class="hover:text-white">Новинки</a>

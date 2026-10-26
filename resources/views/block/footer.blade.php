@@ -16,6 +16,7 @@
             <div class="text-sm font-semibold">Покупателям</div>
             <div class="mt-4 flex flex-col gap-2 text-sm text-blue-100">
                 <a href="{{route('info.page',['slugOrId' => 'delivery'])}}" class="hover:text-white">Доставка</a>
+                <a href="{{route('blog.index')}}" class="hover:text-white">Блог</a>
                 <a href="{{route('info.page',['slugOrId' => 'about'])}}" class="hover:text-white">О компании</a>
             </div>
         </div>

@@ -6,7 +6,7 @@
 <div class="min-h-screen bg-white text-zinc-900">
     <main>
         <section class="mx-auto max-w-7xl px-4 pb-5 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-            <div data-vue-component="HomeHero" data-props='@json(["slides" => $heroSlides])'></div>
+            <div data-vue-component="HomeHero" data-props='@json(["slides" => $banners])'></div>
         </section>
 
         <x-catalog.product-section id="sale-products" title="Скидки" :products="$saleProducts" />

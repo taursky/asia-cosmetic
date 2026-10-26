@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Banner;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\StaticPage;
@@ -9,6 +10,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class HomeController extends Controller
@@ -70,6 +72,27 @@ class HomeController extends Controller
             ->limit(12)
             ->get();
 
+        $banners = Banner::query()
+            ->active()
+            ->ordered()
+            ->get([
+                'id',
+                'desktop_image',
+                'mobile_image',
+                'link',
+            ])
+            ->map(fn (Banner $banner) => [
+                'id' => $banner->id,
+                'desktop_image' => $banner->desktop_image
+                    ? Storage::disk('public')->url($banner->desktop_image)
+                    : null,
+                'mobile_image' => $banner->mobile_image
+                    ? Storage::disk('public')->url($banner->mobile_image)
+                    : null,
+                'link' => $banner->link,
+            ]);
+
+
         $heroSlides = [
             [
                 'eyebrow' => 'Asia Cosmetic',
@@ -99,6 +122,7 @@ class HomeController extends Controller
             'saleProducts',
             'hitProducts',
             'newProducts',
+            'banners',
             'heroSlides',
         ));
     }

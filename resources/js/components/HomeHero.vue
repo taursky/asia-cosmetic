@@ -1,64 +1,72 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const props = defineProps({
     slides: { type: Array, default: () => [] },
 })
 
 const active = ref(0)
+const availableSlides = computed(() => props.slides.filter(slide => slide?.desktop_image || slide?.mobile_image))
+const currentSlide = computed(() => availableSlides.value[active.value] ?? availableSlides.value[0] ?? null)
 let timer = null
 
 function select(index) {
-    active.value = index
+    if (index >= 0 && index < availableSlides.value.length) active.value = index
 }
-
 function next() {
-    if (!props.slides.length) return
-    active.value = (active.value + 1) % props.slides.length
+    if (availableSlides.value.length > 1) active.value = (active.value + 1) % availableSlides.value.length
 }
-
 function previous() {
-    if (!props.slides.length) return
-    active.value = (active.value - 1 + props.slides.length) % props.slides.length
+    if (availableSlides.value.length > 1) active.value = (active.value - 1 + availableSlides.value.length) % availableSlides.value.length
 }
-
-onMounted(() => {
-    if (props.slides.length > 1) timer = window.setInterval(next, 5500)
+function stopTimer() {
+    if (timer !== null) window.clearInterval(timer)
+    timer = null
+}
+function startTimer() {
+    stopTimer()
+    if (availableSlides.value.length > 1) timer = window.setInterval(next, 5500)
+}
+watch(availableSlides, () => {
+    active.value = 0
+    startTimer()
 })
-
-onBeforeUnmount(() => {
-    if (timer) window.clearInterval(timer)
-})
+onMounted(startTimer)
+onBeforeUnmount(stopTimer)
 </script>
 
 <template>
-    <section class="relative overflow-hidden rounded-[2rem] bg-[#071d5d] text-white">
-        <div class="absolute inset-0 opacity-60">
-            <div class="absolute -right-24 -top-24 size-96 rounded-full bg-cyan-400/20 blur-3xl"></div>
-            <div class="absolute -bottom-32 left-1/4 size-[28rem] rounded-full bg-indigo-400/20 blur-3xl"></div>
-        </div>
-
-        <div v-if="slides.length" class="relative min-h-[430px] sm:min-h-[500px]">
-            <transition name="fade" mode="out-in">
-                <div :key="active" class="grid min-h-[430px] items-center px-7 py-14 sm:min-h-[500px] sm:px-12 lg:grid-cols-12 lg:px-16">
-                    <div class="max-w-3xl lg:col-span-8">
-                        <div class="mb-5 text-xs font-semibold uppercase tracking-[.24em] text-cyan-100">{{ slides[active].eyebrow }}</div>
-                        <h1 class="max-w-3xl text-4xl font-semibold leading-[1.05] tracking-[-.04em] sm:text-5xl lg:text-6xl">{{ slides[active].title }}</h1>
-                        <p class="mt-6 max-w-2xl text-base leading-7 text-blue-100 sm:text-lg">{{ slides[active].text }}</p>
-                        <a :href="slides[active].url" class="mt-8 inline-flex rounded-full bg-white px-6 py-3 text-sm font-semibold text-[#071d5d] transition hover:bg-blue-50">
-                            {{ slides[active].button }}
-                        </a>
+    <section class="w-full">
+        <div v-if="currentSlide" class="relative overflow-hidden rounded-[2rem] bg-[#bdbdbd]">
+            <div class="relative aspect-[4/5] sm:aspect-[16/7] lg:aspect-[21/8]">
+                <transition name="fade" mode="out-in">
+                    <a
+                        v-if="currentSlide.link"
+                        :key="currentSlide.id ?? active"
+                        :href="currentSlide.link"
+                        class="absolute inset-0 block"
+                        :aria-label="`Перейти по баннеру ${active + 1}`"
+                    >
+                        <picture>
+                            <source v-if="currentSlide.mobile_image" media="(max-width: 639px)" :srcset="currentSlide.mobile_image" />
+                            <img :src="currentSlide.desktop_image || currentSlide.mobile_image" :alt="currentSlide.alt || 'Рекламный баннер'" class="h-full w-full object-cover" :fetchpriority="active === 0 ? 'high' : 'auto'" />
+                        </picture>
+                    </a>
+                    <div v-else :key="currentSlide.id ?? active" class="absolute inset-0">
+                        <picture>
+                            <source v-if="currentSlide.mobile_image" media="(max-width: 639px)" :srcset="currentSlide.mobile_image" />
+                            <img :src="currentSlide.desktop_image || currentSlide.mobile_image" :alt="currentSlide.alt || 'Рекламный баннер'" class="h-full w-full object-cover" :fetchpriority="active === 0 ? 'high' : 'auto'" />
+                        </picture>
                     </div>
+                </transition>
+            </div>
+            <div v-if="availableSlides.length > 1" class="flex items-center justify-between gap-4 px-2 py-4 sm:px-4">
+                <div class="flex gap-2" aria-label="Выбор баннера">
+                    <button v-for="(_, index) in availableSlides" :key="index" type="button" @click="select(index)" :class="['h-1.5 rounded-full transition-all', active === index ? 'w-9 bg-white' : 'w-4 bg-white/50']" :aria-label="`Баннер ${index + 1}`" :aria-current="active === index ? 'true' : undefined"></button>
                 </div>
-            </transition>
-
-            <div v-if="slides.length > 1" class="absolute bottom-7 left-7 right-7 flex items-center justify-between sm:left-12 sm:right-12 lg:left-16 lg:right-16">
                 <div class="flex gap-2">
-                    <button v-for="(_, index) in slides" :key="index" type="button" @click="select(index)" :class="['h-1.5 rounded-full transition-all', active === index ? 'w-9 bg-white' : 'w-4 bg-white/35']" :aria-label="`Слайд ${index + 1}`"></button>
-                </div>
-                <div class="flex gap-2">
-                    <button type="button" @click="previous" class="grid size-10 place-items-center rounded-full border border-white/30 bg-white/10 text-xl backdrop-blur hover:bg-white/20">‹</button>
-                    <button type="button" @click="next" class="grid size-10 place-items-center rounded-full border border-white/30 bg-white/10 text-xl backdrop-blur hover:bg-white/20">›</button>
+                    <button type="button" @click="previous" aria-label="Предыдущий баннер" class="grid size-9 place-items-center rounded-full border border-white/40 bg-black/30 text-xl text-white backdrop-blur hover:bg-black/50">‹</button>
+                    <button type="button" @click="next" aria-label="Следующий баннер" class="grid size-9 place-items-center rounded-full border border-white/40 bg-black/30 text-xl text-white backdrop-blur hover:bg-black/50">›</button>
                 </div>
             </div>
         </div>
@@ -66,5 +74,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.fade-enter-active,.fade-leave-active{transition:opacity .25s ease,transform .25s ease}.fade-enter-from{opacity:0;transform:translateX(12px)}.fade-leave-to{opacity:0;transform:translateX(-12px)}
+.fade-enter-active,.fade-leave-active{transition:opacity .3s ease}
+.fade-enter-from,.fade-leave-to{opacity:0}
+@media (prefers-reduced-motion: reduce){.fade-enter-active,.fade-leave-active{transition:none}}
 </style>

@@ -85,7 +85,10 @@ class CatalogService
         if ($filter === 'manual') {
             $query->whereHas('catalogCollections', fn (Builder $q) => $q->whereKey($collection->id));
         } elseif ($filter === 'new') {
-            $query->where('products.created_at', '>=', now()->subDays($collection->days ?: 30));
+            $query->where(function ($subQuery) {
+                $subQuery->where('products.updated_at', '>=', now()->subDays(30))
+                    ->orWhere('badge_new_until', '>=', now());
+            });
         } elseif ($filter === 'hit') {
             $query->where('products.is_hit',true);
         } else {

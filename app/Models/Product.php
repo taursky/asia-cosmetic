@@ -78,4 +78,9 @@ class Product extends Model
     {
         return $this->belongsToMany(CatalogCollection::class, 'catalog_collection_product');
     }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
 }

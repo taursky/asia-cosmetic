@@ -12,7 +12,9 @@ use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogService $catalog) {}
+    public function __construct(private readonly CatalogService $catalog)
+    {
+    }
 
     public function index(Request $request): View
     {
@@ -22,7 +24,7 @@ class CatalogController extends Controller
             ->where('is_active', true)->whereNull('parent_id')->whereIn('id', $categoryIds)
             ->with([
                 'lang',
-                'children' => fn ($q) => $q->where('is_active', true)->whereIn('id', $categoryIds)->orderBy('sort_order'),
+                'children' => fn($q) => $q->where('is_active', true)->whereIn('id', $categoryIds)->orderBy('sort_order'),
                 'children.lang',
             ])->orderBy('sort_order')->get();
 
@@ -40,16 +42,16 @@ class CatalogController extends Controller
         $visibleIds = $this->catalog->categoryIdsWithActiveProducts();
         $category = Category::query()
             ->where('is_active', true)->whereIn('categories.id', $visibleIds)
-            ->whereHas('langs', fn (Builder $q) => $q->where('lang', $locale)->where('slug', $categorySlug))
+            ->whereHas('langs', fn(Builder $q) => $q->where('lang', $locale)->where('slug', $categorySlug))
             ->with([
                 'lang', 'parent.lang',
-                'children' => fn ($q) => $q->where('is_active', true)->whereIn('id', $visibleIds)->orderBy('sort_order'),
+                'children' => fn($q) => $q->where('is_active', true)->whereIn('id', $visibleIds)->orderBy('sort_order'),
                 'children.lang',
             ])->firstOrFail();
 
         $categoryIds = $this->catalog->categoryTreeIds($category);
         $query = $this->catalog->listingQuery($locale, $request->user('web'))
-            ->whereHas('categories', fn (Builder $q) => $q->whereIn('categories.id', $categoryIds));
+            ->whereHas('categories', fn(Builder $q) => $q->whereIn('categories.id', $categoryIds));
         $products = $this->catalog->paginate($this->catalog->sort($query, 'new'), $request->user('web'));
 
         return view('catalog.category', compact('category', 'products'));
@@ -81,7 +83,11 @@ class CatalogController extends Controller
         $locale = app()->getLocale();
         $user = $request->user('web');
         $product = $this->catalog->detailQuery($locale, $user)
-            ->whereHas('langs', fn (Builder $q) => $q->where('lang', $locale)->where('slug', $productSlug))
+            ->whereHas('langs', fn(Builder $q) => $q->where('lang', $locale)->where('slug', $productSlug))
+            ->with([
+                'reviews' => fn($query) => $query->published()
+                    ->with('user:id,name')->latest('published_at')->limit(5),
+            ])
             ->firstOrFail();
 
         $this->catalog->decorateProduct($product, $user);

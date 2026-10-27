@@ -152,6 +152,7 @@
                 @endif
             </section>
         </div>
+        @include('catalog.partials.reviews')
 
         @if($product->lang?->description || $product->attributeValues->isNotEmpty())
             <div class="mt-16 grid gap-12 border-t border-slate-200 pt-10 lg:grid-cols-[1.5fr_1fr]">

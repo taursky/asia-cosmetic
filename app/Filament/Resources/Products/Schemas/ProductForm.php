@@ -101,7 +101,7 @@ class ProductForm
                         ->onColor('success')
                         ->offColor('danger')
                         ->default(false),
-                    DateTimePicker::make('badge_new_until')
+                    DatePicker::make('badge_new_until')
                         ->label('Бейдж новинка до')
                         ->seconds(false),
                 ])->columns(3),

@@ -38,7 +38,13 @@
             <div class="line-clamp-2 min-h-10 text-sm font-medium leading-5 text-slate-950">
                 {{ $product->lang?->name }}
             </div>
-
+            @if($product->reviews_count > 0)
+                <div class="mt-1 text-xs text-slate-500">
+                    <span class="text-amber-500">★</span>
+                    {{ number_format((float) $product->rating, 1, ',', ' ') }}
+                    · {{ $product->reviews_count }} отзывов
+                </div>
+            @endif
             @if($variant?->sku ?? $product->sku)
                 <div class="mt-1 text-xs text-slate-400">
                     {{ $variant?->sku ?? $product->sku }}

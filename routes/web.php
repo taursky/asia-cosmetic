@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\Cart\CheckoutController;
 use App\Http\Controllers\Api\Account\ApiFnsController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\FavoriteController;
+use App\Http\Controllers\ProductReviewController;
 
 Route::middleware('guest:web')->group(function (): void {
     Route::get('/login', [CustomerLoginController::class, 'create'])->name('login');
@@ -90,6 +91,13 @@ Route::prefix('catalog')->name('catalog.')->group(function (): void {
         ->name('category');
 });
 
+//Отзывы
+Route::get('/reviews', [ProductReviewController::class, 'index'])->name('reviews.index');
+Route::get('/reviews/product/{productSlug}', [ProductReviewController::class, 'product'])
+    ->where('productSlug', '[A-Za-z0-9_-]+')->name('reviews.product');
+Route::post('/reviews/{product}', [ProductReviewController::class, 'store'])
+    ->middleware(['auth:web', 'throttle:5,1'])->name('reviews.store');
+// /отзывы
 Route::get('/product/{productSlug}', [CatalogController::class, 'product'])
     ->where('productSlug', '[A-Za-z0-9\-_]+')
     ->name('catalog.product');

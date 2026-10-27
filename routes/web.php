@@ -83,6 +83,8 @@ Route::get('/', HomeController::class)->name('home');
 
 Route::prefix('catalog')->name('catalog.')->group(function (): void {
     Route::get('/', [CatalogController::class, 'index'])->name('index');
+    Route::get('/collections/{slug}', [CatalogController::class, 'collection'])
+        ->where('slug', '[A-Za-z0-9_-]+')->name('collection');
     Route::get('/{categorySlug}', [CatalogController::class, 'category'])
         ->where('categorySlug', '[A-Za-z0-9\-_]+')
         ->name('category');

@@ -7,9 +7,9 @@
         <div>
             <div class="text-sm font-semibold">Каталог</div>
             <div class="mt-4 flex flex-col gap-2 text-sm text-blue-100">
-                <a href="#new-products" class="hover:text-white">Новинки</a>
-                <a href="#hit-products" class="hover:text-white">Хиты</a>
-                <a href="#sale-products" class="hover:text-white">Скидки</a>
+                <a href="{{route('catalog.collection', ['slug' => 'new'])}}" class="hover:text-white">Новинки</a>
+                <a href="{{route('catalog.collection', ['slug' => 'bestsellers'])}}" class="hover:text-white">Хиты</a>
+                <a href="{{route('catalog.collection', ['slug' => 'sale'])}}" class="hover:text-white">Скидки</a>
             </div>
         </div>
         <div>

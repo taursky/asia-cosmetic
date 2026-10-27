@@ -4,273 +4,80 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Services\Pricing\CatalogPricePresenter;
+use App\Services\Catalog\CatalogService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogPricePresenter $prices,) {}
+    public function __construct(private readonly CatalogService $catalog) {}
 
     public function index(Request $request): View
     {
         $locale = app()->getLocale();
-        $categoryIds = $this->categoryIdsWithActiveProducts();
-
+        $categoryIds = $this->catalog->categoryIdsWithActiveProducts();
         $categories = Category::query()
-            ->where('is_active', true)
-            ->whereNull('parent_id')
-            ->whereIn('id', $categoryIds)
+            ->where('is_active', true)->whereNull('parent_id')->whereIn('id', $categoryIds)
             ->with([
                 'lang',
-                'children' => fn ($query) => $query
-                    ->where('is_active', true)
-                    ->whereIn('id', $categoryIds)
-                    ->orderBy('sort_order'),
+                'children' => fn ($q) => $q->where('is_active', true)->whereIn('id', $categoryIds)->orderBy('sort_order'),
                 'children.lang',
-            ])
-            ->orderBy('sort_order')
-            ->get();
+            ])->orderBy('sort_order')->get();
 
-        $products = $this->productListingQuery($locale)
-            ->latest('products.created_at')
-            ->paginate(24)
-            ->withQueryString();
+        $products = $this->catalog->paginate(
+            $this->catalog->sort($this->catalog->listingQuery($locale, $request->user('web')), 'new'),
+            $request->user('web')
+        );
 
-        $this->prices->decoratePaginator($products, $request->user());
-
-        return view('catalog.index', compact(
-            'categories',
-            'products',
-        ));
+        return view('catalog.index', compact('categories', 'products'));
     }
 
     public function category(Request $request, string $categorySlug): View
     {
         $locale = app()->getLocale();
-        $visibleCategoryIds = $this->categoryIdsWithActiveProducts();
-
+        $visibleIds = $this->catalog->categoryIdsWithActiveProducts();
         $category = Category::query()
-            ->where('is_active', true)
-            ->whereIn('categories.id', $visibleCategoryIds)
-            ->whereHas('langs', fn (Builder $query) => $query
-                ->where('lang', $locale)
-                ->where('slug', $categorySlug))
+            ->where('is_active', true)->whereIn('categories.id', $visibleIds)
+            ->whereHas('langs', fn (Builder $q) => $q->where('lang', $locale)->where('slug', $categorySlug))
             ->with([
-                'lang',
-                'parent.lang',
-                'children' => fn ($query) => $query
-                    ->where('is_active', true)
-                    ->whereIn('id', $visibleCategoryIds)
-                    ->orderBy('sort_order'),
+                'lang', 'parent.lang',
+                'children' => fn ($q) => $q->where('is_active', true)->whereIn('id', $visibleIds)->orderBy('sort_order'),
                 'children.lang',
-            ])
-            ->firstOrFail();
+            ])->firstOrFail();
 
-        $categoryIds = $this->categoryTreeIds($category);
+        $categoryIds = $this->catalog->categoryTreeIds($category);
+        $query = $this->catalog->listingQuery($locale, $request->user('web'))
+            ->whereHas('categories', fn (Builder $q) => $q->whereIn('categories.id', $categoryIds));
+        $products = $this->catalog->paginate($this->catalog->sort($query, 'new'), $request->user('web'));
 
-        $products = $this->productListingQuery($locale)
-            ->whereHas('prices', function ($query)  {
-                //todo: убрать, когда будут цены
-//                $query->where('product_price_type_id', 6);
-            })
-            ->whereHas('categories', function ($query) use ($categoryIds) {
-                $query
-                    ->whereIn('categories.id', $categoryIds)
-                    ->orderBy('categories.sort_order');
-            })
-            ->latest('products.created_at')
-            ->paginate(24)
-            ->withQueryString();
+        return view('catalog.category', compact('category', 'products'));
+    }
 
-        $this->prices->decoratePaginator($products, $request->user());
+    public function collection(Request $request, string $slug): View
+    {
+        $preset = config("catalog_collections.{$slug}");
+        abort_unless(is_array($preset) && isset($preset['title']), 404);
 
-        return view('catalog.category', compact(
-            'category',
-            'products',
-        ));
+        $query = $this->catalog->listingQuery(app()->getLocale(), $request->user('web'));
+        $query = $this->catalog->applyPreset($query, $preset);
+        $products = $this->catalog->paginate($query, $request->user('web'));
+
+        return view('catalog.collection', compact('preset', 'products', 'slug'));
     }
 
     public function product(Request $request, string $productSlug): View
     {
         $locale = app()->getLocale();
-
-        $product = Product::query()
-            ->where('is_active', true)
-            ->where('is_visible', true)
-            ->whereHas('langs', fn (Builder $query) => $query
-                ->where('lang', $locale)
-                ->where('slug', $productSlug))
-            ->with([
-                'lang',
-                'langs',
-                'images' => fn ($query) => $query
-                    ->orderByDesc('is_primary')
-                    ->orderBy('position'),
-
-                'categories.lang',
-
-                'attributeValues.attribute.lang',
-                'attributeValues.lang',
-
-                'prices' => fn ($query) => $query
-                    ->with('priceType')
-                    ->whereNull('product_variant_id')
-                    ->orderBy('min_quantity'),
-
-                'variants' => fn ($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('id'),
-
-                'variants.lang',
-                'variants.images' => fn ($query) => $query
-                    ->orderByDesc('is_primary')
-                    ->orderBy('position'),
-
-                'variants.prices' => fn ($query) => $query
-                    ->with('priceType')
-                    ->orderBy('min_quantity'),
-
-                'variants.optionValues.option.lang',
-                'variants.optionValues.lang',
-            ])
+        $user = $request->user('web');
+        $product = $this->catalog->detailQuery($locale, $user)
+            ->whereHas('langs', fn (Builder $q) => $q->where('lang', $locale)->where('slug', $productSlug))
             ->firstOrFail();
 
-        $this->prices->decorateProduct($product, $request->user());
+        $this->catalog->decorateProduct($product, $user);
+        $relatedProducts = $this->catalog->relatedProducts($product, $locale, $user);
+        $this->catalog->decorateCollection($relatedProducts, $user);
 
-        $relatedProducts = $this->relatedProducts($product, $locale);
-        $this->prices->decorateCollection($relatedProducts, $request->user());
-
-        return view('catalog.product', compact(
-            'product',
-            'relatedProducts',
-        ));
-    }
-
-    private function productListingQuery(string $locale): Builder
-    {
-        return Product::query()
-            ->select('products.*')
-            ->where('products.is_active', true)
-            ->where('products.is_visible', true)
-            ->whereHas('langs', fn (Builder $query) => $query
-                ->where('lang', $locale))
-            ->whereHas('prices', function ($query)  {
-                //todo: убрать, когда будут цены
-                $query->where('product_price_type_id', 6);
-            })
-            ->with([
-                'lang',
-                'images' => fn ($query) => $query
-                    ->orderByDesc('is_primary')
-                    ->orderBy('position'),
-
-                'prices' => fn ($query) => $query
-                    ->whereNull('product_variant_id')
-                    ->with('priceType')
-                    ->orderBy('min_quantity'),
-
-                'variants' => fn ($query) => $query
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('id'),
-
-                'variants.images' => fn ($query) => $query
-                    ->orderByDesc('is_primary')
-                    ->orderBy('position'),
-
-                'variants.prices' => fn ($query) => $query
-                    ->with('priceType')
-                    ->orderBy('min_quantity'),
-            ]);
-    }
-
-    /**
-     * Категории, в которых есть активные/видимые товары, плюс их родители.
-     * Это позволяет показывать родительский раздел каталога, даже если товары
-     * находятся только в его дочерних категориях.
-     */
-    private function categoryIdsWithActiveProducts(): array
-    {
-        $directIds = DB::table('category_product')
-            ->join('products', 'products.id', '=', 'category_product.product_id')
-            ->where('products.is_active', true)
-            ->where('products.is_visible', true)
-            ->whereNull('products.deleted_at')
-            ->distinct()
-            ->pluck('category_product.category_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        if ($directIds === []) {
-            return [];
-        }
-
-        $parents = Category::query()
-            ->where('is_active', true)
-            ->pluck('parent_id', 'id');
-
-        $result = array_fill_keys($directIds, true);
-
-        foreach ($directIds as $categoryId) {
-            $currentId = $categoryId;
-            $guard = 0;
-
-            while ($guard++ < 100) {
-                $parentId = $parents->get($currentId);
-
-                if (! $parentId) {
-                    break;
-                }
-
-                $parentId = (int) $parentId;
-                $result[$parentId] = true;
-                $currentId = $parentId;
-            }
-        }
-
-        return array_map('intval', array_keys($result));
-    }
-
-    private function categoryTreeIds(Category $category): array
-    {
-        $ids = [$category->id];
-
-        $children = Category::query()
-            ->where('is_active', true)
-            ->where('parent_id', $category->id)
-            ->pluck('id')
-            ->all();
-
-        while ($children !== []) {
-            $ids = array_merge($ids, $children);
-
-            $children = Category::query()
-                ->where('is_active', true)
-                ->whereIn('parent_id', $children)
-                ->pluck('id')
-                ->all();
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    private function relatedProducts(Product $product, string $locale)
-    {
-        $categoryIds = $product->categories->pluck('id');
-
-        if ($categoryIds->isEmpty()) {
-            return collect();
-        }
-
-        return $this->productListingQuery($locale)
-            ->whereKeyNot($product->getKey())
-            ->whereHas('categories', fn (Builder $query) => $query
-                ->whereIn('categories.id', $categoryIds))
-            ->limit(8)
-            ->get();
+        return view('catalog.product', compact('product', 'relatedProducts'));
     }
 }

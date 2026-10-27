@@ -3,9 +3,9 @@
         <nav class="hidden gap-6 text-blue-100 md:flex">
             <a href="{{route('info.page',['slugOrId' => 'about'])}}" class="hover:text-white">О компании</a>
             <a href="{{route('blog.index')}}" class="hover:text-white">Блог</a>
-            <a href="#hit-products" class="hover:text-white">Хиты</a>
-            <a href="#sale-products" class="hover:text-white">Акции</a>
-            <a href="#new-products" class="hover:text-white">Новинки</a>
+            <a href="{{route('catalog.collection', ['slug' => 'bestsellers'])}}" class="hover:text-white">Хиты</a>
+            <a href="{{route('catalog.collection', ['slug' => 'sale'])}}" class="hover:text-white">Акции</a>
+            <a href="{{route('catalog.collection', ['slug' => 'new'])}}" class="hover:text-white">Новинки</a>
 {{--            <a href="{{ route('favorites.index') }}">♡ Избранное</a>--}}
             <a href="{{route('info.page',['slugOrId' => 'delivery'])}}" class="hover:text-white">Доставка</a>
         </nav>

@@ -139,39 +139,7 @@
                 @endif
             </section>
         </div>
-        @include('catalog.partials.reviews')
-
-        @if($product->lang?->description || $product->attributeValues->isNotEmpty())
-            <div class="mt-16 grid gap-12 border-t border-slate-200 pt-10 lg:grid-cols-[1.5fr_1fr]">
-                @if($product->lang?->description)
-                    <section>
-                        <h2 class="text-2xl font-semibold text-slate-950">Описание</h2>
-                        <div class="prose prose-slate mt-5 max-w-none">
-                            {!! $product->lang->description !!}
-                        </div>
-                    </section>
-                @endif
-
-                @if($product->attributeValues->isNotEmpty())
-                    <section>
-                        <h2 class="text-2xl font-semibold text-slate-950">Характеристики</h2>
-
-                        <dl class="mt-5 divide-y divide-slate-100">
-                            @foreach($product->attributeValues as $value)
-                                <div class="grid grid-cols-2 gap-4 py-3 text-sm">
-                                    <dt class="text-slate-500">
-                                        {{ $value->attribute?->lang?->name ?? $value->attribute?->code }}
-                                    </dt>
-                                    <dd class="font-medium text-slate-900">
-                                        {{ $value->lang?->value ?? $value->code }}
-                                    </dd>
-                                </div>
-                            @endforeach
-                        </dl>
-                    </section>
-                @endif
-            </div>
-        @endif
+        @include('catalog.partials.product-accordion')
 
         @if($relatedProducts->isNotEmpty())
             <div class="mt-16 border-t border-slate-200 pt-10">

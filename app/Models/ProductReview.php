@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductReview extends Model
 {
@@ -14,6 +15,8 @@ class ProductReview extends Model
     {
         return ['rating' => 'integer', 'published_at' => 'datetime'];
     }
+
+    public function media(): HasMany { return $this->hasMany(ProductReviewMedia::class, 'product_review_id')->orderBy('sort_order'); }
 
     public function product(): BelongsTo { return $this->belongsTo(Product::class); }
     public function user(): BelongsTo { return $this->belongsTo(User::class); }

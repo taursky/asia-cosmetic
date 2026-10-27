@@ -90,8 +90,10 @@ class CatalogController extends Controller
         $product = $this->catalog->detailQuery($locale, $user)
             ->whereHas('langs', fn(Builder $q) => $q->where('lang', $locale)->where('slug', $productSlug))
             ->with([
-                'reviews' => fn($query) => $query->published()
-                    ->with('user:id,name')->latest('published_at')->limit(5),
+                'reviews' => fn ($query) => $query->published()
+                    ->with(['user:id,name', 'media'])
+                    ->latest('published_at')
+                    ->limit(5),
             ])
             ->firstOrFail();
 

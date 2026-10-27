@@ -86,3 +86,4 @@
         padding: 22px;
     }
 }
+[x-cloak] { display: none !important; }

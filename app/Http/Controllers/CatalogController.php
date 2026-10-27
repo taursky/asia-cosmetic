@@ -13,10 +13,8 @@ use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogService $catalog,
-                                private readonly BreadcrumbService $breadcrumbs)
-    {
-    }
+    public function __construct(private readonly CatalogService $catalog, private readonly BreadcrumbService $breadcrumbs)
+    {}
 
     public function index(Request $request): View
     {

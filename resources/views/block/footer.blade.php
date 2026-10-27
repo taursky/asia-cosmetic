@@ -2,7 +2,9 @@
     <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div class="lg:col-span-2">
             <div class="text-2xl font-semibold tracking-[-.04em]">ASIA·COSMETIC</div>
-            <p class="mt-4 max-w-md text-sm leading-6 text-blue-100">Профессиональная косметика из Азии для бизнеса и домашнего ухода.</p>
+            <p class="mt-4 max-w-md text-sm leading-6 text-blue-100">
+                <a href="{{route('home')}}">Профессиональная косметика из Азии для бизнеса и домашнего ухода.</a>
+            </p>
         </div>
         <div>
             <div class="text-sm font-semibold">Каталог</div>
@@ -10,6 +12,7 @@
                 <a href="{{route('catalog.collection', ['slug' => 'new'])}}" class="hover:text-white">Новинки</a>
                 <a href="{{route('catalog.collection', ['slug' => 'bestsellers'])}}" class="hover:text-white">Хиты</a>
                 <a href="{{route('catalog.collection', ['slug' => 'sale'])}}" class="hover:text-white">Скидки</a>
+                <a href="{{route('reviews.index')}}" class="hover:text-white">Отзывы о товарах</a>
             </div>
         </div>
         <div>

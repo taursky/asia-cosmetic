@@ -32,7 +32,8 @@
         {{-- /breadcrumbs --}}
         <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
             <section>
-                <div class="overflow-hidden rounded-3xl bg-slate-50">
+                <div class="relative overflow-hidden rounded-3xl bg-slate-50">
+                    <x-catalog.product-badges :product="$product" large class="absolute left-4 top-4 z-10" />
                     @if($images->first())
                         <img
                             src="{{ Storage::disk('public')->url($images->first()->name) }}"

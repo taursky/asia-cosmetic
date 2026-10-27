@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Filament\Widgets\OrderStatsWidget;
 use App\Filament\Widgets\SystemInfo;
 use Filament\Forms\Components\DatePicker;
 use Filament\Pages\Dashboard as BaseDashboard;
@@ -24,15 +25,14 @@ class CustomDashboard extends Page
     protected function getHeaderWidgets(): array
     {
         return [
-            SystemInfo::class,
 //            NavigationGroupsWidget::class,
-//            OrdersWidget::class,
+            OrderStatsWidget::class,
+            SystemInfo::class,
         ];
     }
 
     public function getColumns(): int | array
     {
-//        return 3;
         return [
             'md' => 3,
             'xl' => 4,

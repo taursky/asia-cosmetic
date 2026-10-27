@@ -18,7 +18,8 @@
     <x-catalog.favorite-button :product="$product" />
 
     <a href="{{ route('catalog.product', $product->lang?->slug) }}" class="block">
-        <div class="overflow-hidden rounded-2xl bg-slate-50">
+        <div class="relative overflow-hidden rounded-2xl bg-slate-50">
+            <x-catalog.product-badges :product="$product" class="absolute left-3 top-3 z-10 max-w-[calc(100%-1.5rem)]" />
             @if($image)
                 <img
                     src="{{ Storage::disk('public')->url($image->name) }}"

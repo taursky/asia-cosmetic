@@ -16,7 +16,7 @@ class Product extends Model
     protected $fillable = [
         'external_id', 'one_c_id', 'sku', 'source', 'sync_uid', 'source_url', 'is_active', 'is_visible',
         'allow_discounts', 'vat_rate', 'unit', 'weight', 'length', 'width', 'height',
-        'video_url', 'rating', 'reviews_count', 'sync_hash', 'synced_at',
+        'video_url', 'rating', 'reviews_count', 'sync_hash', 'synced_at', 'is_hit', 'badge_new_until'
     ];
 
     protected function casts(): array
@@ -32,6 +32,8 @@ class Product extends Model
             'height' => 'decimal:3',
             'rating' => 'decimal:2',
             'synced_at' => 'datetime',
+            'is_hit' => 'boolean',
+            'badge_new_until' => 'date',
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Models\Role;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -93,17 +94,19 @@ class AdminUserForm
 
                 Section::make('Дополнительная информация')
                     ->schema([
-                        Placeholder::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('Создан')
-                            ->content(fn($record) => $record?->created_at?->format('d.m.Y H:i') ?? '-'),
+                            ->state(fn($record) => $record?->created_at?->format('d.m.Y H:i') ?? '-')
+//                            ->content(fn($record) => $record?->created_at?->format('d.m.Y H:i') ?? '-')
+                        ,
 
-                        Placeholder::make('updated_at')
+                        TextEntry::make('updated_at')
                             ->label('Обновлен')
-                            ->content(fn($record) => $record?->updated_at?->format('d.m.Y H:i') ?? '-'),
+                            ->state(fn($record) => $record?->updated_at?->format('d.m.Y H:i') ?? '-'),
 
-                        Placeholder::make('deleted_at')
+                        TextEntry::make('deleted_at')
                             ->label('Удален')
-                            ->content(fn($record) => $record?->deleted_at?->format('d.m.Y H:i') ?? '-'),
+                            ->state(fn($record) => $record?->deleted_at?->format('d.m.Y H:i') ?? '-'),
                     ])->columns(3)
                     ->hidden(fn($livewire) => $livewire instanceof CreateAdminUser),
             ]);

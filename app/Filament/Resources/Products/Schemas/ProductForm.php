@@ -8,6 +8,8 @@ use App\Models\Product;
 use App\Models\ProductPriceType;
 use App\Models\OptionValue;
 use App\Filament\Support\ImageUploadFields;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -79,9 +81,29 @@ class ProductForm
 
             Section::make('Статус')
                 ->schema([
-                    Toggle::make('is_active')->label('Активен')->default(true),
-                    Toggle::make('is_visible')->label('Показывать на сайте')->default(true),
-                    Toggle::make('allow_discounts')->label('Разрешить скидки')->default(true),
+                    Toggle::make('is_active')
+                        ->label('Активен')
+                        ->onColor('success')
+                        ->offColor('danger')
+                        ->default(true),
+                    Toggle::make('is_visible')
+                        ->label('Показывать на сайте')
+                        ->onColor('success')
+                        ->offColor('danger')
+                        ->default(true),
+                    Toggle::make('allow_discounts')
+                        ->label('Разрешить скидки')
+                        ->onColor('success')
+                        ->offColor('danger')
+                        ->default(true),
+                    Toggle::make('is_hit')
+                        ->label('Хит продаж')
+                        ->onColor('success')
+                        ->offColor('danger')
+                        ->default(false),
+                    DateTimePicker::make('badge_new_until')
+                        ->label('Бейдж новинка до')
+                        ->seconds(false),
                 ])->columns(3),
 
             Section::make('Характеристики')

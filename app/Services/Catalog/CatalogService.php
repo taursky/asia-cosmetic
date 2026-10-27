@@ -86,9 +86,12 @@ class CatalogService
             $query->whereHas('catalogCollections', fn (Builder $q) => $q->whereKey($collection->id));
         } elseif ($filter === 'new') {
             $query->where('products.created_at', '>=', now()->subDays($collection->days ?: 30));
+        } elseif ($filter === 'hit') {
+            $query->where('products.is_hit',true);
         } else {
             $this->applyPreset($query, ['filter' => $filter, 'sort' => $collection->sort]);
         }
+        //todo  add
 
         if ($collection->category_id !== null) {
             $category = Category::query()->find($collection->category_id);

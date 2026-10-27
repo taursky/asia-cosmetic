@@ -60,6 +60,7 @@ class CatalogCollectionForm
                         ->options([
                             'all' => 'Все товары',
                             'sale' => 'Акции (old_amount > amount)',
+                            'hit' => 'Хиты продаж',
                             'rated' => 'С отзывами',
                             'new' => 'Новинки за N дней',
                             'manual' => 'Товары вручную',

@@ -3,6 +3,7 @@
 namespace App\Services\Catalog;
 
 use App\Models\Category;
+use App\Models\CatalogCollection;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\Pricing\CatalogPricePresenter;
@@ -76,6 +77,33 @@ class CatalogService
         }
 
         return $this->sort($query, $preset['sort'] ?? 'new');
+    }
+
+    public function applyCollection(Builder $query, CatalogCollection $collection): Builder
+    {
+        $filter = $collection->filter;
+        if ($filter === 'manual') {
+            $query->whereHas('catalogCollections', fn (Builder $q) => $q->whereKey($collection->id));
+        } elseif ($filter === 'new') {
+            $query->where('products.created_at', '>=', now()->subDays($collection->days ?: 30));
+        } else {
+            $this->applyPreset($query, ['filter' => $filter, 'sort' => $collection->sort]);
+        }
+
+        if ($collection->category_id !== null) {
+            $category = Category::query()->find($collection->category_id);
+            if ($category === null || ! $category->is_active) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $ids = $this->categoryTreeIds($category);
+                $query->whereHas('categories', fn (Builder $q) => $q->whereIn('categories.id', $ids));
+            }
+        }
+
+        // The preset branch has already sorted the query; avoid duplicate ORDER BY.
+        return in_array($filter, ['manual', 'new'], true)
+            ? $this->sort($query, $collection->sort)
+            : $query;
     }
 
     public function sort(Builder $query, string $sort): Builder

@@ -71,4 +71,9 @@ class Product extends Model
         return $this->belongsToMany(User::class, 'favorite_products')
             ->withTimestamps();
     }
+
+    public function catalogCollections(): BelongsToMany
+    {
+        return $this->belongsToMany(CatalogCollection::class, 'catalog_collection_product');
+    }
 }

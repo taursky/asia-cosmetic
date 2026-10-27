@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\CatalogCollection;
 use App\Models\Product;
 use App\Services\Catalog\CatalogService;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,14 +57,23 @@ class CatalogController extends Controller
 
     public function collection(Request $request, string $slug): View
     {
-        $preset = config("catalog_collections.{$slug}");
-        abort_unless(is_array($preset) && isset($preset['title']), 404);
+        $collection = CatalogCollection::query()->published()
+            ->where('slug', $slug)->firstOrFail();
+
+        $preset = [
+            'title' => $collection->title,
+            'description' => $collection->description,
+            'seo_title' => $collection->seo_title,
+            'seo_description' => $collection->seo_description,
+        ];
 
         $query = $this->catalog->listingQuery(app()->getLocale(), $request->user('web'));
-        $query = $this->catalog->applyPreset($query, $preset);
-        $products = $this->catalog->paginate($query, $request->user('web'));
+        $products = $this->catalog->paginate(
+            $this->catalog->applyCollection($query, $collection),
+            $request->user('web')
+        );
 
-        return view('catalog.collection', compact('preset', 'products', 'slug'));
+        return view('catalog.collection', compact('preset', 'products', 'slug', 'collection'));
     }
 
     public function product(Request $request, string $productSlug): View

@@ -5,13 +5,7 @@
 @section('content')
 <div class="bg-white">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <nav class="mb-7 flex flex-wrap items-center gap-2 text-sm text-slate-500" aria-label="Навигация">
-            <a href="{{ route('home') }}" class="hover:text-[#071d5d]">Главная</a>
-            <span>/</span>
-            <a href="{{ route('catalog.index') }}" class="hover:text-[#071d5d]">Каталог</a>
-            <span>/</span>
-            <span class="text-slate-900">{{ $preset['title'] }}</span>
-        </nav>
+        <x-catalog.breadcrumbs :items="$breadcrumbs" />
 
         <div class="mb-10 rounded-3xl bg-[#071d5d] px-6 py-10 text-white sm:px-10 sm:py-12">
             <p class="text-xs font-semibold uppercase tracking-[.2em] text-blue-200">Asia Cosmetic · Подборка</p>

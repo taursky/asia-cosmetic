@@ -5,18 +5,7 @@
 @section('content')
 <div class="bg-white">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <nav class="mb-6 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <a href="{{ route('home') }}" class="hover:text-slate-950">Главная</a>
-            <span>/</span>
-            <a href="{{ route('catalog.index') }}" class="hover:text-slate-950">Каталог</a>
-
-            @if($category->parent?->lang)
-                <span>/</span>
-                <a href="{{ route('catalog.category', $category->parent->lang->slug) }}" class="hover:text-slate-950">
-                    {{ $category->parent->lang->name }}
-                </a>
-            @endif
-        </nav>
+        <x-catalog.breadcrumbs :items="$breadcrumbs" />
 
         <div class="mb-8 max-w-3xl">
             <h1 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">

@@ -5,6 +5,7 @@
 @section('content')
 <div class="bg-white">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <x-catalog.breadcrumbs :items="$breadcrumbs" />
         <div class="mb-8">
             <p class="text-sm font-medium uppercase tracking-[0.2em] text-slate-500">Asia Cosmetic</p>
             <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Каталог</h1>

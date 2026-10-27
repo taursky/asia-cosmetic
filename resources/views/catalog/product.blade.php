@@ -16,20 +16,7 @@
 @section('content')
 <div class="bg-white">
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {{-- breadcrumbs --}}
-        <nav class="mb-8 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-            <a href="{{ route('home') }}" class="hover:text-slate-950">Главная</a>
-            <span>/</span>
-            <a href="{{ route('catalog.index') }}" class="hover:text-slate-950">Каталог</a>
-
-            @if($product->categories->first()?->lang)
-                <span>/</span>
-                <a href="{{ route('catalog.category', $product->categories->first()->lang->slug) }}" class="hover:text-slate-950">
-                    {{ $product->categories->first()->lang->name }}
-                </a>
-            @endif
-        </nav>
-        {{-- /breadcrumbs --}}
+        <x-catalog.breadcrumbs :items="$breadcrumbs" />
         <div class="grid gap-10 lg:grid-cols-2 lg:gap-16">
             <section>
                 <div class="relative overflow-hidden rounded-3xl bg-slate-50">

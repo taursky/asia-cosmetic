@@ -6,13 +6,15 @@ use App\Models\Category;
 use App\Models\CatalogCollection;
 use App\Models\Product;
 use App\Services\Catalog\CatalogService;
+use App\Services\Catalog\BreadcrumbService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogService $catalog)
+    public function __construct(private readonly CatalogService $catalog,
+                                private readonly BreadcrumbService $breadcrumbs)
     {
     }
 
@@ -33,7 +35,8 @@ class CatalogController extends Controller
             $request->user('web')
         );
 
-        return view('catalog.index', compact('categories', 'products'));
+        $breadcrumbs = $this->breadcrumbs->catalog();
+        return view('catalog.index', compact('categories', 'products', 'breadcrumbs'));
     }
 
     public function category(Request $request, string $categorySlug): View
@@ -54,7 +57,8 @@ class CatalogController extends Controller
             ->whereHas('categories', fn(Builder $q) => $q->whereIn('categories.id', $categoryIds));
         $products = $this->catalog->paginate($this->catalog->sort($query, 'new'), $request->user('web'));
 
-        return view('catalog.category', compact('category', 'products'));
+        $breadcrumbs = $this->breadcrumbs->category($category);
+        return view('catalog.category', compact('category', 'products', 'breadcrumbs'));
     }
 
     public function collection(Request $request, string $slug): View
@@ -75,7 +79,8 @@ class CatalogController extends Controller
             $request->user('web')
         );
 
-        return view('catalog.collection', compact('preset', 'products', 'slug', 'collection'));
+        $breadcrumbs = $this->breadcrumbs->collection($preset['title']);
+        return view('catalog.collection', compact('preset', 'products', 'slug', 'collection', 'breadcrumbs'));
     }
 
     public function product(Request $request, string $productSlug): View
@@ -94,6 +99,7 @@ class CatalogController extends Controller
         $relatedProducts = $this->catalog->relatedProducts($product, $locale, $user);
         $this->catalog->decorateCollection($relatedProducts, $user);
 
-        return view('catalog.product', compact('product', 'relatedProducts'));
+        $breadcrumbs = $this->breadcrumbs->product($product);
+        return view('catalog.product', compact('product', 'relatedProducts', 'breadcrumbs'));
     }
 }

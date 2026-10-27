@@ -50,7 +50,8 @@
             <div class="mt-7 grid gap-6 lg:grid-cols-2">
                 <div>
                     <h3 class="mb-3 font-semibold">Динамика заказов</h3>
-                    @php($maxDaily = max(1, ...array_column($stats['daily'], 'count')))
+                    @php($dailyCounts = array_column($stats['daily'] ?? [], 'count'))
+                    @php($maxDaily = max(1, max($dailyCounts ?: [0])))
                     <div class="space-y-2 max-h-72 overflow-y-auto">
                         @forelse($stats['daily'] as $day)
                             <div class="grid grid-cols-[6rem_1fr_3rem] items-center gap-2 text-xs">

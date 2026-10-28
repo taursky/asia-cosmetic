@@ -15,14 +15,35 @@ class AttributeValuesTable
     public static function configure(Table $table): Table
     {
         return $table->columns([
-            TextColumn::make('id')->label('ID')->sortable()->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('attribute.lang.name')->label('Атрибут')->searchable(),
-            TextColumn::make('lang.value')->label('Значение')->searchable(),
-            TextColumn::make('code')->label('Код')->searchable()->toggleable(),
-            TextColumn::make('numeric_value')->label('Число')->toggleable(isToggledHiddenByDefault: true),
-            TextColumn::make('sort_order')->label('Порядок')->sortable(),
+            TextColumn::make('id')->label('ID')
+                ->sortable()
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('attribute.lang.name')
+                ->label('Атрибут')
+                ->searchable(),
+            TextColumn::make('lang.value')
+                ->label('Значение')
+                ->width(30)
+                ->limit(25)
+                ->searchable(),
+            TextColumn::make('code')
+                ->label('Код')
+                ->width(30)
+                ->limit(25)
+                ->searchable()
+                ->toggleable(),
+            TextColumn::make('numeric_value')
+                ->label('Число')
+                ->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('sort_order')
+                ->label('Порядок')
+                ->sortable(),
         ])->filters([
-            SelectFilter::make('attribute_id')->relationship('attribute', 'code')->label('Атрибут')->searchable()->preload(),
+            SelectFilter::make('attribute_id')
+                ->relationship('attribute', 'code')
+                ->label('Атрибут')
+                ->searchable()
+                ->preload(),
         ])->recordActions([
             ViewAction::make()->iconButton(),
             EditAction::make()->iconButton(),

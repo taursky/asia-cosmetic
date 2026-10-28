@@ -8,6 +8,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
@@ -36,7 +37,8 @@ class CustomersTable
                     ->placeholder('Не назначен'),
                 IconColumn::make('customer_role_locked')
                     ->label('Роль закреплена')
-                    ->boolean(),
+                    ->boolean()
+                    ->toggleable(),
                 TextColumn::make('customer_role_valid_until')
                     ->label('Роль до')
                     ->dateTime('d.m.Y')
@@ -47,6 +49,8 @@ class CustomersTable
                 TextColumn::make('customerProfile.company_name')
                     ->label('Компания')
                     ->placeholder('Физ. лицо')
+                    ->width(20)
+                    ->limit(20)
                     ->searchable()
                     ->toggleable(),
                 TextColumn::make('customerProfile.inn')
@@ -66,11 +70,22 @@ class CustomersTable
                 TextColumn::make('customer_documents_count')
                     ->counts('customerDocuments')
                     ->label('Документы')
-                    ->badge(),
+                    ->badge()
+                    ->toggleable(),
 
-                IconColumn::make('is_active')->label('Активен')->boolean(),
-                TextColumn::make('last_login_at')->label('Последний вход')->dateTime('d.m.Y H:i')->sortable()->toggleable(),
-                TextColumn::make('created_at')->label('Создан')->dateTime('d.m.Y H:i')->sortable()->toggleable(),
+                IconColumn::make('is_active')
+                    ->label('Активен')
+                    ->boolean(),
+                TextColumn::make('last_login_at')
+                    ->label('Последний вход')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->toggleable(),
+                TextColumn::make('created_at')
+                    ->label('Создан')
+                    ->dateTime('d.m.Y H:i')
+                    ->sortable()
+                    ->toggleable(),
             ])
             ->filters([
                 Filter::make('id')
@@ -79,8 +94,10 @@ class CustomersTable
                         filled($data['id'] ?? null),
                         fn (Builder $q) => $q->whereKey((int) $data['id']),
                     )),
-                TernaryFilter::make('is_active')->label('Активность'),
-                TernaryFilter::make('customer_role_locked')->label('Роль закреплена'),
+                TernaryFilter::make('is_active')
+                    ->label('Активность'),
+                TernaryFilter::make('customer_role_locked')
+                    ->label('Роль закреплена'),
                 SelectFilter::make('customer_role_id')
                     ->label('Уровень покупателя')
                     ->relationship('customerRole', 'name')
@@ -103,8 +120,10 @@ class CustomersTable
                     )),
             ])
             ->recordActions([
-                EditAction::make()->iconButton(),
-            ])
+                EditAction::make()
+                    ->color('info')
+                    ->iconButton(),
+            ], position: RecordActionsPosition::BeforeColumns)
             ->toolbarActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),

@@ -23,7 +23,7 @@
             Каталог
         </a>
 
-        <form action="{{ route('catalog.index') }}" method="get" class="col-span-3 row-start-2 flex rounded-full bg-zinc-100 p-1 lg:col-span-1 lg:row-auto">
+        <form action="{{ route('product.search') }}" method="get" class="col-span-3 row-start-2 flex rounded-full bg-zinc-100 p-1 lg:col-span-1 lg:row-auto">
             <input name="q" type="search" placeholder="Поиск по каталогу" class="min-w-0 flex-1 border-0 bg-transparent px-4 py-2 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:ring-0">
             <button class="grid size-9 place-items-center rounded-full bg-white text-zinc-700 shadow-sm" aria-label="Поиск">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-5"><circle cx="11" cy="11" r="7" stroke-width="1.8"/><path d="m20 20-3.5-3.5" stroke-width="1.8" stroke-linecap="round"/></svg>

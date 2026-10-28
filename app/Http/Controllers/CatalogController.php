@@ -7,13 +7,14 @@ use App\Models\CatalogCollection;
 use App\Models\Product;
 use App\Services\Catalog\CatalogService;
 use App\Services\Catalog\BreadcrumbService;
+use App\Services\Catalog\ProductSearch;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class CatalogController extends Controller
 {
-    public function __construct(private readonly CatalogService $catalog, private readonly BreadcrumbService $breadcrumbs)
+    public function __construct(private readonly CatalogService $catalog, private readonly BreadcrumbService $breadcrumbs, private readonly ProductSearch $productSearch)
     {}
 
     public function index(Request $request): View
@@ -101,5 +102,22 @@ class CatalogController extends Controller
 
         $breadcrumbs = $this->breadcrumbs->product($product);
         return view('catalog.product', compact('product', 'relatedProducts', 'breadcrumbs'));
+    }
+
+    public function search(Request $request): View
+    {
+        $data = $request->validate(['q' => ['nullable', 'string', 'max:150']]);
+        $q = trim(preg_replace('/\s+/u', ' ', $data['q'] ?? ''));
+        $products = null;
+
+        if ($q !== '') {
+            $user = $request->user('web');
+            $query = $this->catalog->listingQuery(app()->getLocale(), $user);
+            $this->productSearch->apply($query, $q, app()->getLocale());
+            $products = $this->catalog->paginate($query, $user)->withQueryString();
+        }
+
+        $breadcrumbs = $this->breadcrumbs->catalog();
+        return view('catalog.search', compact('q', 'products', 'breadcrumbs'));
     }
 }

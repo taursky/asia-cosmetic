@@ -90,7 +90,8 @@ Route::prefix('catalog')->name('catalog.')->group(function (): void {
         ->where('categorySlug', '[A-Za-z0-9\-_]+')
         ->name('category');
 });
-
+//Search
+Route::get('/search', [CatalogController::class, 'search'])->name('product.search');
 //Отзывы
 Route::get('/reviews', [ProductReviewController::class, 'index'])->name('reviews.index');
 Route::get('/reviews/product/{productSlug}', [ProductReviewController::class, 'product'])

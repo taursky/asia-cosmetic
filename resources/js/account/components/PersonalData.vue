@@ -5,7 +5,7 @@ const loading = ref(true)
 const saving = ref(false)
 const message = ref('')
 const error = ref('')
-const form = reactive({ name: '', email: '', phone: '' })
+const form = reactive({ name: '', email: '', phone: '', legal_type: '' })
 const user = ref(null)
 const role = computed(() => user.value?.customer_role || null)
 const profile = computed(() => user.value?.customer_profile || null)
@@ -26,6 +26,7 @@ onMounted(async () => {
             name: payload.user?.name || '',
             email: payload.user?.email || '',
             phone: payload.user?.phone || '',
+            legal_type: payload.user?.customer_profile?.legal_type || '',
         })
     } catch (e) {
         error.value = e.message || 'Ошибка загрузки профиля.'
@@ -67,7 +68,8 @@ async function save() {
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Уровень покупателя</div><div class="mt-2 text-lg font-semibold">{{ role?.name || 'Не назначен' }}</div><div v-if="user?.customer_role_valid_until" class="mt-1 text-xs text-zinc-500">Действует до {{ new Date(user.customer_role_valid_until).toLocaleDateString('ru-RU') }}</div></div>
             <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Тип цены</div><div class="mt-2 text-lg font-semibold">{{ role?.price_type?.name || 'Не назначен' }}</div><div v-if="role?.price_type?.code" class="mt-1 text-xs text-zinc-400">{{ role.price_type.code }}</div></div>
-            <div class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Реквизиты</div><div class="mt-2 text-lg font-semibold">{{ statusText(profile?.verification_status) }}</div><div v-if="profile?.company_name" class="mt-1 text-xs text-zinc-500">{{ profile.company_name }}</div></div>
+
+            <div v-if="form.legal_type !== 'individual'" class="rounded-2xl bg-zinc-50 p-5"><div class="text-xs uppercase tracking-wide text-zinc-400">Реквизиты</div><div class="mt-2 text-lg font-semibold">{{ statusText(profile?.verification_status) }}</div><div v-if="profile?.company_name" class="mt-1 text-xs text-zinc-500">{{ profile.company_name }}</div></div>
         </div>
         <div>
             <h2 class="text-2xl font-semibold text-zinc-950">Личные данные</h2>
@@ -87,7 +89,7 @@ async function save() {
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-zinc-700">Телефон</label>
                 <input v-model="form.phone" class="w-full px-4 py-2 border border-gray-300 rounded-xl bg-zinc-50 text-zinc-500">
-                <p class="mt-1 text-sm text-red-600">При изменении номера телефона моет потребоваться обращение в службу поддержки.</p>
+                <p class="mt-1 text-sm text-red-600">При изменении номера телефона может потребоваться обращение в службу поддержки.</p>
             </div>
         </div>
 

@@ -273,7 +273,7 @@ async function save() {
 
     <form v-else class="space-y-8" @submit.prevent="save">
         <div class="flex flex-wrap items-start justify-between gap-4">
-            <div>
+            <div v-if="!form.legal_type === 'individual'">
                 <h2 class="text-2xl font-semibold text-zinc-950">Платёжные реквизиты</h2>
                 <p class="mt-1 text-sm leading-6 text-zinc-500">Используются для договора, счёта на оплату и документов по заказам.</p>
             </div>
@@ -285,7 +285,7 @@ async function save() {
         <div v-if="form.verification_comment" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             {{ form.verification_comment }}
         </div>
-        <section v-if="!isLocked" class="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 sm:p-6">
+        <section v-if="!isLocked && !form.legal_type === 'individual'" class="rounded-2xl border border-blue-200 bg-blue-50/40 p-5 sm:p-6">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <h3 class="font-semibold text-zinc-950">Автозаполнение и проверка ФНС</h3>

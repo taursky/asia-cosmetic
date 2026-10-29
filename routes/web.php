@@ -16,6 +16,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Api\Cart\CartController;
 use App\Http\Controllers\Api\Cart\CheckoutController;
 use App\Http\Controllers\Api\Account\ApiFnsController;
+use App\Http\Controllers\Api\Account\OrderDocumentController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\ProductReviewController;
@@ -71,6 +72,12 @@ Route::middleware('auth:web')
         Route::put('/password', [AccountController::class, 'updatePassword'])
             ->name('password.update');
 
+        Route::get('/api/orders/documents', [OrderDocumentController::class, 'index'])
+            ->name('orders.documents.index');
+        Route::get('/orders/{order}/documents/{type}', [OrderDocumentController::class, 'show'])
+            ->whereNumber('order')
+            ->whereIn('type', ['invoice', 'contract'])
+            ->name('orders.documents.show');
         Route::get('/api/orders/{orderId}', [AccountController::class, 'order'])
             ->whereNumber('orderId')
             ->name('account.api.orders.show');

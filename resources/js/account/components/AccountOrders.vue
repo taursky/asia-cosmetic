@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 
 const orders = ref([])
+const orderDocuments = ref({})
 const loading = ref(true)
 const error = ref('')
 const expandedOrderId = ref(null)
@@ -103,6 +104,24 @@ async function loadOrders(page = 1) {
         totalOrders.value = result.total ?? 0
 
         expandedOrderId.value = null
+        orderDocuments.value = {}
+        const ids = orders.value.map(order => order.id)
+        if (ids.length) {
+            try {
+                const params = new URLSearchParams()
+                ids.forEach(id => params.append('ids[]', id))
+                const documentsResponse = await fetch(`/account/api/orders/documents?${params}`, {
+                    credentials: 'same-origin',
+                    headers: { Accept: 'application/json' },
+                })
+                if (documentsResponse.ok) {
+                    const payload = await documentsResponse.json()
+                    orderDocuments.value = payload.documents ?? {}
+                }
+            } catch (_) {
+                // Orders remain visible if the document service is unavailable.
+            }
+        }
     } catch (e) {
         error.value = e.message
     } finally {
@@ -228,6 +247,19 @@ onMounted(loadOrders)
                     <span>
                         Позиций: {{ order.items_count }}
                     </span>
+                </div>
+
+                <div v-if="orderDocuments[order.id]?.length" class="mt-4 flex flex-wrap items-center gap-2 border-t border-zinc-100 pt-4">
+                    <span class="mr-1 text-sm font-medium text-zinc-600">Документы:</span>
+                    <div v-for="document in orderDocuments[order.id]" :key="document.type" class="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 p-1">
+                        <span class="px-2 text-xs font-semibold text-zinc-700">{{ document.label }}</span>
+                        <a :href="document.download_url" class="rounded-lg p-2 text-[#071d5d] hover:bg-white" :aria-label="`Скачать ${document.label.toLowerCase()}`" :title="`Скачать ${document.label.toLowerCase()}`">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3"/></svg>
+                        </a>
+                        <a :href="document.print_url" target="_blank" rel="noopener noreferrer" class="rounded-lg p-2 text-[#071d5d] hover:bg-white" :aria-label="`Открыть для печати ${document.label.toLowerCase()}`" :title="`Открыть для печати ${document.label.toLowerCase()}`">
+                            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6zM18 12h.01"/></svg>
+                        </a>
+                    </div>
                 </div>
 
                 <div class="mt-4 border-t border-zinc-100 pt-4">

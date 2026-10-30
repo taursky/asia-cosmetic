@@ -5,7 +5,7 @@ const loading = ref(true)
 const saving = ref(false)
 const message = ref('')
 const error = ref('')
-const form = reactive({ name: '', email: '', phone: '', legal_type: '' })
+const form = reactive({ last_name: '', first_name: '', middle_name: '', email: '', phone: '', legal_type: '' })
 const user = ref(null)
 const role = computed(() => user.value?.customer_role || null)
 const profile = computed(() => user.value?.customer_profile || null)
@@ -23,7 +23,9 @@ onMounted(async () => {
         const payload = await response.json()
         user.value = payload.user
         Object.assign(form, {
-            name: payload.user?.name || '',
+            last_name: payload.user?.last_name || '',
+            first_name: payload.user?.first_name || '',
+            middle_name: payload.user?.middle_name || '',
             email: payload.user?.email || '',
             phone: payload.user?.phone || '',
             legal_type: payload.user?.customer_profile?.legal_type || '',
@@ -49,9 +51,9 @@ async function save() {
             'X-CSRF-TOKEN': csrf(),
         },
         body: JSON.stringify({
-            name: form.name,
-            email: form.email,
-            phone: form.phone,
+            last_name: form.last_name,
+            first_name: form.first_name,
+            middle_name: form.middle_name,
         }),
     })
 
@@ -78,8 +80,16 @@ async function save() {
 
         <div class="grid gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2">
-                <label class="mb-1.5 block text-sm font-medium text-zinc-700">Имя / ФИО</label>
-                <input v-model="form.name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" required>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700">Фамилия</label>
+                <input v-model="form.last_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" required>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700">Имя</label>
+                <input v-model="form.first_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200" required>
+            </div>
+            <div>
+                <label class="mb-1.5 block text-sm font-medium text-zinc-700">Отчество (необязательно)</label>
+                <input v-model="form.middle_name" class="w-full px-4 py-2 border border-gray-400 rounded-xl border-zinc-200">
             </div>
             <div>
                 <label class="mb-1.5 block text-sm font-medium text-zinc-700">Email</label>

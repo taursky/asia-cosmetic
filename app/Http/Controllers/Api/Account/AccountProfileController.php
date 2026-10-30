@@ -5,11 +5,8 @@ namespace App\Http\Controllers\Api\Account;
 use App\Http\Controllers\Controller;
 use App\Models\CustomerProfile;
 use App\Models\CustomerRole;
-use App\Models\User;
-use App\Services\Auth\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -56,6 +53,9 @@ class AccountProfileController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
+                'last_name' => $user->last_name,
+                'first_name' => $user->first_name,
+                'middle_name' => $user->middle_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
                 'email_verified_at' => $user->email_verified_at,
@@ -82,72 +82,19 @@ class AccountProfileController extends Controller
         ]);
     }
 
-//    public function updatePersonal(Request $request): JsonResponse
-//    {
-//        $data = $request->validate([
-//            'name' => ['required', 'string', 'max:255'],
-//            'email' => ['nullable', 'string', 'email', 'max:255'],
-//            'phone' => ['nullable', 'string', 'max:255'],
-//        ]);
-//        Log::info('updatePersonal data', [$data]);
-//        $request->user()->update($data);
-//
-//        return $this->show($request);
-//    }
-
     public function updatePersonal(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['nullable', 'string', 'email', 'max:255'],
-            'phone' => ['required', 'string', 'max:32'],
+            'last_name' => ['required', 'string', 'max:100'],
+            'first_name' => ['required', 'string', 'max:100'],
+            'middle_name' => ['nullable', 'string', 'max:100'],
         ]);
 
-        try {
-            $phone = app(PhoneNormalizer::class)
-                ->normalize($data['phone']);
-        } catch (\InvalidArgumentException) {
-            throw ValidationException::withMessages([
-                'phone' => 'Проверьте формат номера телефона.',
-            ]);
-        }
+        $data['name'] = trim(implode(' ', array_filter([
+            $data['last_name'], $data['first_name'], $data['middle_name'] ?? null,
+        ], fn ($value) => filled($value))));
 
-        $user = $request->user();
-
-        if (
-            User::query()
-                ->where('phone', $phone)
-                ->whereKeyNot($user->id)
-                ->exists()
-        ) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'phone' => 'Этот номер телефона уже используется другим аккаунтом.',
-            ]);
-        }
-
-       DB::transaction(
-            function () use ($user, $data, $phone): void {
-                $phoneChanged = $user->phone !== $phone;
-                $user->forceFill([
-                    'name' => $data['name'],
-                    'phone' => $phone,
-                    'phone_verified_at' => $phoneChanged
-                        ? null
-                        : $user->phone_verified_at,
-                ])->save();
-
-                if ($phoneChanged) {
-                    \App\Models\CustomerProfile::query()->updateOrCreate(
-                        ['user_id' => $user->id],
-                        [
-                            'verification_status' =>
-                                \App\Models\CustomerProfile::STATUS_PENDING,
-                            'verified_at' => null,
-                        ]
-                    );
-                }
-            }
-        );
+        $request->user()->forceFill($data)->save();
 
         return $this->show($request);
     }

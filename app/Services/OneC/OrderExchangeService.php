@@ -7,13 +7,20 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class OrderExchangeService
 {
+    public function __construct(private readonly OrderCustomerData $customerData) {}
+
     public function pending(int $perPage = 100): LengthAwarePaginator
     {
         return Order::query()
             ->with('items')
             ->whereIn('sync_status', ['pending', 'failed'])
             ->orderBy('id')
-            ->paginate(min(max($perPage, 1), 500));
+            ->paginate(min(max($perPage, 1), 500))
+            ->through(function (Order $order): array {
+                $payload = $order->toArray();
+                $payload['customer_data'] = $this->customerData->forOrder($order);
+                return $payload;
+            });
     }
 
     public function markStatus(Order $order, array $data): Order

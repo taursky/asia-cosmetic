@@ -96,9 +96,12 @@ class CheckoutService
             'product_price_type_id' => $result['order_role']['price_type_id'],
             'customer_data' => [
                 'name' => $user->name,
+                'last_name' => $user->last_name,
+                'first_name' => $user->first_name,
+                'middle_name' => $user->middle_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
-                'profile' => $profile?->toArray(),
+                'profile' => $isBusinessProfile ? $profile->toArray() : null,
             ],
             'delivery_data' => [
                 'method' => $data['delivery_method'] ?? 'pickup',

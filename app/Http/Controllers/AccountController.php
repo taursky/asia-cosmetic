@@ -211,6 +211,7 @@ class AccountController extends Controller
             'currency' => $order->currency,
             'subtotal' => $order->subtotal,
             'total' => $order->total,
+            'comment' => $order->comment,
             'items' => $order->items->map(fn ($item) => [
                 'id' => $item->id,
                 'name' => $item->name,

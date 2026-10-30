@@ -318,6 +318,10 @@ onMounted(loadOrders)
                                 </p>
                             </div>
 
+                            <div v-if="orderDetails[order.id].comment" class="rounded-xl bg-zinc-50 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">Комментарий к заказу</p>
+                                <p class="mt-2 whitespace-pre-wrap break-words text-sm text-zinc-800">{{ orderDetails[order.id].comment }}</p>
+                            </div>
                             <div class="flex justify-between border-t border-zinc-200 pt-3">
                                 <span class="font-semibold">Итого:</span>
                                 <span class="font-bold">
